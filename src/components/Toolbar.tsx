@@ -33,8 +33,7 @@ import {
   Type,
   Palette,
   AlignLeft,
-  Image,
-  ArrowRight
+  Image
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Position, FontFamily, TextAnnotation } from '@/types';
@@ -299,31 +298,6 @@ const Toolbar: React.FC = () => {
     );
   };
 
-  const handleTextToArrow = () => {
-    if (selectedTextAnnotation) {
-      const text = selectedTextAnnotation.text;
-      if (text === "->" || text === "=>" || text === "-->" || text === "→") {
-        dispatch(updateAnnotation({
-          ...selectedTextAnnotation,
-          type: 'drawing',
-          path: [
-            { x: selectedTextAnnotation.position.x, y: selectedTextAnnotation.position.y + selectedTextAnnotation.size.height / 2 },
-            { x: selectedTextAnnotation.position.x + selectedTextAnnotation.size.width, y: selectedTextAnnotation.position.y + selectedTextAnnotation.size.height / 2 }
-          ],
-          arrowEnd: true,
-          text: undefined,
-          fontFamily: undefined,
-          fontSize: undefined
-        }));
-        toast.success('Text converted to arrow');
-      } else {
-        toast.error('Selected text cannot be converted to an arrow');
-      }
-    } else {
-      toast.error('Please select a text annotation first');
-    }
-  };
-
   const renderTextAnnotationOptions = () => {
     if (!selectedTextAnnotation || activeTool !== 'select') return null;
     
@@ -383,12 +357,6 @@ const Toolbar: React.FC = () => {
             ))}
           </div>
         </div>
-
-        <ActionButton
-          onClick={handleTextToArrow}
-          icon={<ArrowRight size={18} />}
-          tooltip="Convert to Arrow"
-        />
       </div>
     );
   };
