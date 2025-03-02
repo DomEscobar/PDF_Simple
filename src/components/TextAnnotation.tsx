@@ -19,13 +19,22 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [originalContent, setOriginalContent] = useState(annotation.content);
 
   // Focus textarea when selected
   useEffect(() => {
     if (isSelected && textareaRef.current) {
       textareaRef.current.focus();
+      // Place cursor at the end of text
+      const length = textareaRef.current.value.length;
+      textareaRef.current.setSelectionRange(length, length);
     }
   }, [isSelected]);
+
+  // Save original content on first render
+  useEffect(() => {
+    setOriginalContent(annotation.content);
+  }, []);
 
   // Mouse down handler for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -165,6 +174,41 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
     dispatch(deleteAnnotation(annotation.id));
   };
 
+  // Handle click on text annotation
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    dispatch(setSelectedAnnotation(annotation.id));
+  };
+
+  // Handle double click to edit
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  };
+
+  // Handle blur event
+  const handleBlur = () => {
+    // If content is empty, restore original content
+    if (!annotation.content.trim()) {
+      dispatch(updateTextAnnotation({
+        id: annotation.id,
+        content: originalContent
+      }));
+    }
+  };
+
+  // Handle key press events
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Commit changes on Escape key
+    if (e.key === 'Escape') {
+      if (textareaRef.current) {
+        textareaRef.current.blur();
+      }
+    }
+  };
+
   return (
     <div
       className={`annotation ${isSelected ? 'ring-2 ring-primary' : ''}`}
@@ -175,23 +219,29 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         height: annotation.size.height * scale,
         zIndex: isSelected ? 100 : 10,
         transition: 'none',
-        animation: 'none'
+        animation: 'none',
+        background: isSelected ? 'rgba(255, 255, 255, 0.7)' : 'transparent'
       }}
       onMouseDown={handleMouseDown}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
     >
       <textarea
         ref={textareaRef}
         value={annotation.content}
         onChange={handleContentChange}
+        onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
         className="w-full h-full p-2 resize-none bg-transparent border-none focus:outline-none focus:ring-0"
         style={{
           color: annotation.color,
           fontSize: `${annotation.fontSize * scale}px`,
-          cursor: activeTool === 'select' ? 'move' : 'default',
+          cursor: activeTool === 'select' ? (isSelected ? 'text' : 'move') : 'default',
           transition: 'none',
           animation: 'none'
         }}
         onClick={(e) => e.stopPropagation()}
+        onDoubleClick={(e) => e.stopPropagation()}
         autoFocus={isSelected}
         spellCheck={false}
       />
