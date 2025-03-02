@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -55,8 +54,8 @@ const PDFViewer: React.FC = () => {
         y: (e.clientY - rect.top) / scale,
       };
       
-      // Create text annotation at click position
-      dispatch(createTextAnnotation({ position }));
+      // Create text annotation at click position - pass currentPage in payload
+      dispatch(createTextAnnotation({ position, pageNumber: currentPage }));
     }
   };
 

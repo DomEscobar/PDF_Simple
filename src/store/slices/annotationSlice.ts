@@ -2,7 +2,6 @@
 import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
 import { Position, Color, LineThickness, Annotation, EditorHistory, TextAnnotation, DrawingAnnotation, SignatureAnnotation } from '@/types';
-import { store } from '@/store';
 
 // Define the initial state
 interface AnnotationState {
@@ -51,7 +50,7 @@ export const setIsDrawing = createAction<boolean>('annotation/setIsDrawing');
 // Action to add a point to the current drawing path
 export const addPointToPath = createAction<Position>('annotation/addPointToPath');
 
-// Action to finish drawing
+// Action to finish drawing - now include pageNumber in payload
 export const finishDrawing = createAction<number>('annotation/finishDrawing');
 
 // Action to undo
@@ -69,17 +68,19 @@ export const updateAnnotation = createAction<Annotation>('annotation/updateAnnot
 // Action to delete annotation
 export const deleteAnnotation = createAction<string>('annotation/deleteAnnotation');
 
-// Action to create signature annotation
+// Action to create signature annotation - now include pageNumber in payload
 export const createSignatureAnnotation = createAction<{
   position: Position;
   size: { width: number; height: number };
   path: Position[];
+  pageNumber: number;
 }>('annotation/createSignatureAnnotation');
 
 // Fix the createTextAnnotation action to include pageNumber
 export const createTextAnnotation = createAction<{
   position: Position;
   content?: string;
+  pageNumber: number;
 }>('annotation/createTextAnnotation');
 
 const annotationSlice = createSlice({
@@ -143,6 +144,7 @@ const annotationSlice = createSlice({
           return state;
         }
         
+        // Use pageNumber from payload instead of store.getState()
         const pageNumber = action.payload;
         
         // Create new drawing annotation
@@ -238,8 +240,8 @@ const annotationSlice = createSlice({
       })
       // Handle text annotation creation
       .addCase(createTextAnnotation, (state, action) => {
-        const { position, content = 'Text annotation' } = action.payload;
-        const { currentPage } = store.getState().pdf;
+        // Get pageNumber from payload instead of store.getState()
+        const { position, content = 'Text annotation', pageNumber } = action.payload;
         
         const newAnnotation: TextAnnotation = {
           id: uuidv4(),
@@ -250,7 +252,7 @@ const annotationSlice = createSlice({
           color: state.selectedColor,
           fontSize: 16,
           createdAt: Date.now(),
-          pageNumber: currentPage,
+          pageNumber: pageNumber,
         };
         
         // Add to history
@@ -269,8 +271,8 @@ const annotationSlice = createSlice({
       
       // Handle signature annotation creation
       .addCase(createSignatureAnnotation, (state, action) => {
-        const { position, size, path } = action.payload;
-        const { currentPage } = store.getState().pdf;
+        // Get pageNumber from payload instead of store.getState()
+        const { position, size, path, pageNumber } = action.payload;
         
         const newAnnotation: SignatureAnnotation = {
           id: uuidv4(),
@@ -279,7 +281,7 @@ const annotationSlice = createSlice({
           size,
           path,
           createdAt: Date.now(),
-          pageNumber: currentPage,
+          pageNumber: pageNumber,
         };
         
         // Add to history
