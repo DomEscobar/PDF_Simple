@@ -35,7 +35,7 @@ import {
   AlignLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Position, FontFamily } from '@/types';
+import { Position, FontFamily, TextAnnotation } from '@/types';
 
 const Toolbar: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -50,8 +50,11 @@ const Toolbar: React.FC = () => {
   const [signaturePath, setSignaturePath] = useState<Position[]>([]);
   const [showFontOptions, setShowFontOptions] = useState(false);
 
-  const selectedTextAnnotation = selectedAnnotationId ? 
-    history.present.find(ann => ann.id === selectedAnnotationId && ann.type === 'text') : null;
+  // Find the selected annotation and ensure it's a text annotation
+  const selectedAnnotation = selectedAnnotationId ? 
+    history.present.find(ann => ann.id === selectedAnnotationId) : null;
+  const selectedTextAnnotation = selectedAnnotation?.type === 'text' ? 
+    selectedAnnotation as TextAnnotation : null;
 
   // Color options
   const colorOptions = [
