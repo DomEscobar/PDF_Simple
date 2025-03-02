@@ -24,6 +24,7 @@ export type TextAnnotation = {
   color: Color;
   fontSize: number;
   createdAt: number;
+  pageNumber: number;
 };
 
 export type DrawingAnnotation = {
@@ -35,6 +36,7 @@ export type DrawingAnnotation = {
     thickness: number;
   }[];
   createdAt: number;
+  pageNumber: number;
 };
 
 export type SignatureAnnotation = {
@@ -44,6 +46,7 @@ export type SignatureAnnotation = {
   position: Position;
   size: Size;
   createdAt: number;
+  pageNumber: number;
 };
 
 export type Annotation = TextAnnotation | DrawingAnnotation | SignatureAnnotation;

@@ -5,9 +5,7 @@ import TextAnnotation from './TextAnnotation';
 import SignatureBox from './SignatureBox';
 
 interface PDFAnnotationsLayerProps {
-  history: {
-    present: Annotation[];
-  };
+  history: Annotation[];
   selectedAnnotationId: string | null;
 }
 
@@ -17,7 +15,7 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
 }) => {
   return (
     <>
-      {history.present.map((annotation: Annotation) => {
+      {history.map((annotation: Annotation) => {
         switch (annotation.type) {
           case 'text':
             return (
