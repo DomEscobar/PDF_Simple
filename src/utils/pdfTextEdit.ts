@@ -43,6 +43,24 @@ export const handleTextFocus = (e: Event) => {
   const originalBg = window.getComputedStyle(element).backgroundColor;
   element.setAttribute('data-original-color', originalColor);
   element.setAttribute('data-original-bg', originalBg);
+
+
+   // Create a new div with the same dimensions and styling
+  const editorDiv = document.createElement('div');
+  editorDiv.style.backgroundColor = 'white';
+  editorDiv.style.color = 'transparent'; // Use black text for better visibility
+  editorDiv.style.position = 'absolute';
+  editorDiv.style.outline = 'none';
+
+  // Copy the computed styles and position of the original element
+  const styles = window.getComputedStyle(element);
+  editorDiv.style.width = styles.width;
+  editorDiv.style.height = styles.height;
+  editorDiv.style.left = styles.left;
+  editorDiv.style.top = styles.top;
+  // Add the editor div before the original element
+  element.parentNode?.insertBefore(editorDiv, element);
+
 };
 
 // Handle blur on text element
