@@ -119,15 +119,31 @@ const PDFViewer: React.FC = () => {
         transition: background-color 0.2s linear;
         border-radius: 2px;
         padding: 1px;
+        position: relative;
+        min-width: 1em;
       }
       .pdf-editable-text:hover {
         background-color: rgba(255, 255, 0, 0.2);
         outline: 1px dashed rgba(0, 0, 0, 0.3);
       }
       .pdf-text-editing {
-        background-color: rgba(255, 255, 255, 0.9) !important;
+        background-color: white !important;
+        color: black !important;
         outline: 2px solid rgba(0, 120, 255, 0.7) !important;
         box-shadow: 0 0 8px rgba(0, 120, 255, 0.3);
+        min-width: 1em;
+        z-index: 100;
+        position: relative;
+      }
+      .pdf-text-editing::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: white;
+        z-index: -1;
       }
     `;
     
