@@ -1,4 +1,3 @@
-
 import React, { useCallback, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -53,13 +52,11 @@ const Toolbar: React.FC = () => {
   const [signaturePath, setSignaturePath] = useState<Position[]>([]);
   const [showFontOptions, setShowFontOptions] = useState(false);
 
-  // Find the selected annotation and ensure it's a text annotation
   const selectedAnnotation = selectedAnnotationId ? 
     history.present.find(ann => ann.id === selectedAnnotationId) : null;
   const selectedTextAnnotation = selectedAnnotation?.type === 'text' ? 
     selectedAnnotation as TextAnnotation : null;
 
-  // Color options
   const colorOptions = [
     '#1e88e5', // blue
     '#43a047', // green
@@ -69,7 +66,6 @@ const Toolbar: React.FC = () => {
     '#000000', // black
   ];
 
-  // Font family options
   const fontFamilyOptions = [
     { value: 'sans', label: 'Sans' },
     { value: 'serif', label: 'Serif' },
@@ -77,7 +73,6 @@ const Toolbar: React.FC = () => {
     { value: 'cursive', label: 'Cursive' },
   ];
 
-  // Font size options with "px" added
   const fontSizeOptions = [
     { value: 12, label: '12px' },
     { value: 16, label: '16px' },
@@ -85,14 +80,12 @@ const Toolbar: React.FC = () => {
     { value: 24, label: '24px' },
   ];
 
-  // Line thickness options
   const thicknessOptions = [
     { value: 'thin', label: 'Thin' },
     { value: 'medium', label: 'Medium' },
     { value: 'thick', label: 'Thick' },
   ];
 
-  // Handle changing font family for selected text annotation
   const handleFontFamilyChange = (fontFamily: FontFamily) => {
     if (selectedTextAnnotation) {
       dispatch(updateAnnotation({
@@ -102,7 +95,6 @@ const Toolbar: React.FC = () => {
     }
   };
 
-  // Handle changing font size for selected text annotation
   const handleFontSizeChange = (fontSize: number) => {
     if (selectedTextAnnotation) {
       dispatch(updateAnnotation({
@@ -112,7 +104,6 @@ const Toolbar: React.FC = () => {
     }
   };
 
-  // Handle changing text color for selected text annotation
   const handleTextColorChange = (color: string) => {
     if (selectedTextAnnotation) {
       dispatch(updateAnnotation({
@@ -122,50 +113,41 @@ const Toolbar: React.FC = () => {
     }
   };
 
-  // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check if file is a PDF
     if (file.type !== 'application/pdf') {
       toast.error('Please select a PDF file');
       return;
     }
 
-    // Load the PDF file
     const fileUrl = URL.createObjectURL(file);
     dispatch(loadPDF({ url: fileUrl, name: file.name }));
     toast.success(`Loaded: ${file.name}`);
 
-    // Reset the file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  // Handle image upload
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check if file is an image
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
 
-    // Create an image URL and add it to the annotations
     const imageUrl = URL.createObjectURL(file);
     
-    // Load the image to get its dimensions
     const img = new Image();
     img.onload = () => {
       const aspectRatio = img.width / img.height;
       const width = Math.min(300, img.width);
       const height = width / aspectRatio;
       
-      // Create an image annotation at the center of the viewport
       dispatch(createImageAnnotation({
         position: { x: 100, y: 100 },
         size: { width, height },
@@ -177,20 +159,15 @@ const Toolbar: React.FC = () => {
     };
     img.src = imageUrl;
 
-    // Reset the image input
     if (imageInputRef.current) {
       imageInputRef.current.value = '';
     }
   };
 
-  // Handle export PDF
   const handleExportPDF = () => {
-    // This is a placeholder for PDF export functionality
-    // In a real implementation, we would use a library like jsPDF or PDF.js to generate the PDF with annotations
     toast.success('PDF exported successfully!');
   };
 
-  // Handle signature canvas events
   const handleSignatureStart = (e: React.MouseEvent) => {
     if (!signatureCanvasRef.current) return;
     
@@ -204,7 +181,6 @@ const Toolbar: React.FC = () => {
     setIsDrawingSignature(true);
     setSignaturePath([point]);
     
-    // Start drawing on canvas
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.beginPath();
@@ -226,10 +202,8 @@ const Toolbar: React.FC = () => {
       y: e.clientY - rect.top,
     };
     
-    // Add point to path
     setSignaturePath(prev => [...prev, point]);
     
-    // Draw on canvas
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.lineTo(point.x, point.y);
@@ -242,28 +216,24 @@ const Toolbar: React.FC = () => {
     setIsDrawingSignature(false);
   };
 
-  // Save signature and exit signature mode
   const saveSignature = () => {
     if (signaturePath.length < 2) {
       toast.error('Please draw a signature');
       return;
     }
     
-    // Create signature annotation with currentPage from the store
     dispatch(createSignatureAnnotation({
       position: { x: 100, y: 100 },
       size: { width: 300, height: 150 },
       path: signaturePath,
-      pageNumber: currentPage, // Add the current page number from the store
+      pageNumber: currentPage
     }));
     
-    // Exit signature mode
     setIsSignatureMode(false);
     setSignaturePath([]);
     toast.success('Signature added to document');
   };
 
-  // Clear signature canvas
   const clearSignature = useCallback(() => {
     if (!signatureCanvasRef.current) return;
     
@@ -276,13 +246,11 @@ const Toolbar: React.FC = () => {
     setSignaturePath([]);
   }, []);
 
-  // Cancel signature mode
   const cancelSignature = () => {
     setIsSignatureMode(false);
     setSignaturePath([]);
   };
 
-  // Render signature modal
   const renderSignatureModal = () => {
     if (!isSignatureMode) return null;
     
@@ -330,14 +298,11 @@ const Toolbar: React.FC = () => {
     );
   };
 
-  // Render text annotation options sub-toolbar
   const renderTextAnnotationOptions = () => {
-    // Only show if a text annotation is selected
     if (!selectedTextAnnotation || activeTool !== 'select') return null;
     
     return (
       <div className="bg-white text-gray-800 py-2 px-4 border-b border-editor-border flex items-center gap-4 shadow-sm animate-slide-up">
-        {/* Font Family */}
         <div className="relative">
           <ActionButton
             onClick={() => setShowFontOptions(!showFontOptions)}
@@ -362,7 +327,6 @@ const Toolbar: React.FC = () => {
           )}
         </div>
         
-        {/* Font Size */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">Size:</span>
           <select
@@ -378,7 +342,6 @@ const Toolbar: React.FC = () => {
           </select>
         </div>
         
-        {/* Font Color */}
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">Color:</span>
           <div className="flex gap-1">
@@ -400,9 +363,7 @@ const Toolbar: React.FC = () => {
 
   return (
     <>
-      {/* Main toolbar */}
       <div className="bg-editor-panel py-2 px-4 border-b border-editor-border flex items-center gap-2 shadow-sm">
-        {/* File operations */}
         <div className="flex items-center gap-2 border-r border-editor-border pr-2">
           <input
             type="file"
@@ -423,7 +384,6 @@ const Toolbar: React.FC = () => {
           />
         </div>
         
-        {/* Zoom controls */}
         <div className="flex items-center gap-2 border-r border-editor-border pr-2">
           <ActionButton
             onClick={() => dispatch(zoomOut())}
@@ -437,7 +397,6 @@ const Toolbar: React.FC = () => {
           />
         </div>
         
-        {/* Editing tools */}
         <div className="flex items-center gap-2 border-r border-editor-border pr-2">
           <ActionButton
             onClick={() => dispatch(setActiveTool('select'))}
@@ -469,7 +428,6 @@ const Toolbar: React.FC = () => {
               tooltip="Draw Tool"
             />
             
-            {/* Color picker dropdown */}
             {showColorPicker && (
               <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-lg border border-editor-border grid grid-cols-3 gap-2 z-20 animate-scale-in">
                 {colorOptions.map(color => (
@@ -495,7 +453,6 @@ const Toolbar: React.FC = () => {
               tooltip="Line Thickness"
             />
             
-            {/* Line thickness dropdown */}
             {showLineThickness && (
               <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-lg border border-editor-border flex flex-col gap-2 z-20 animate-scale-in">
                 {thicknessOptions.map(option => (
@@ -527,7 +484,6 @@ const Toolbar: React.FC = () => {
             tooltip="Add Signature"
           />
           
-          {/* Image Upload Button */}
           <div>
             <input
               type="file"
@@ -544,7 +500,6 @@ const Toolbar: React.FC = () => {
           </div>
         </div>
         
-        {/* History controls */}
         <div className="flex items-center gap-2">
           <ActionButton
             onClick={() => dispatch(undo())}
@@ -570,10 +525,8 @@ const Toolbar: React.FC = () => {
         </div>
       </div>
       
-      {/* Text annotation options sub-toolbar */}
       {renderTextAnnotationOptions()}
       
-      {/* Signature modal */}
       {renderSignatureModal()}
     </>
   );

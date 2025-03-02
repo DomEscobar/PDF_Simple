@@ -222,7 +222,7 @@ const PDFViewer: React.FC = () => {
                 
                 {/* Render all annotations for each page */}
                 <PDFAnnotationsLayer 
-                  history={history.present.filter(item => item.pageNumber === index + 1)} 
+                  currentPageAnnotations={history.present.filter(item => item.pageNumber === index + 1)} 
                   selectedAnnotationId={selectedAnnotationId}
                 />
               </div>

@@ -1,27 +1,39 @@
+
 import React from 'react';
 import { useAppSelector } from '@/store';
 import TextAnnotation from './TextAnnotation';
 import DrawingCanvas from './DrawingCanvas';
 import SignatureBox from './SignatureBox';
 import ImageAnnotation from './ImageAnnotation';
+import { Annotation } from '@/types';
 
-const PDFAnnotationsLayer: React.FC = () => {
-  const { annotations, selectedAnnotationId } = useAppSelector(state => state.annotation.history);
+interface PDFAnnotationsLayerProps {
+  // Make these props optional since we'll also use the Redux store
+  currentPageAnnotations?: Annotation[];
+  selectedAnnotationId?: string | null;
+}
+
+const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
+  currentPageAnnotations,
+  selectedAnnotationId: selectedId
+}) => {
+  const { history, selectedAnnotationId } = useAppSelector(state => state.annotation);
   const { currentPage, scale } = useAppSelector(state => state.pdf);
   const { activeTool } = useAppSelector(state => state.annotation);
+  
+  // Use props if provided, otherwise use data from the Redux store
+  const annotations = currentPageAnnotations || history.present.filter(
+    annotation => annotation.pageNumber === currentPage
+  );
+  const selectedAnnotationIdToUse = selectedId !== undefined ? selectedId : selectedAnnotationId;
 
   const handleClick = () => {
     if (activeTool === 'text') {
-      document.body.style.cursor = 'text';
+      document.body.style.cursor = 'default'; // Switch to default pointer for text tool
     } else {
       document.body.style.cursor = 'default';
     }
   };
-
-  // Filter annotations to only show those for the current page
-  const currentPageAnnotations = annotations.filter(
-    annotation => annotation.pageNumber === currentPage
-  );
 
   return (
     <div
@@ -30,9 +42,9 @@ const PDFAnnotationsLayer: React.FC = () => {
     >
       <div className="relative w-full h-full" style={{ pointerEvents: 'all' }} onClick={handleClick}>
         {/* Render all annotations for current page */}
-        {currentPageAnnotations.map((annotation) => {
+        {annotations.map((annotation) => {
           // Check if annotation is selected
-          const isSelected = selectedAnnotationId === annotation.id;
+          const isSelected = selectedAnnotationIdToUse === annotation.id;
           
           if (annotation.type === 'text') {
             return (
@@ -46,7 +58,7 @@ const PDFAnnotationsLayer: React.FC = () => {
             return (
               <DrawingCanvas
                 key={annotation.id}
-                annotation={annotation}
+                drawingAnnotation={annotation}
                 isSelected={isSelected}
               />
             );
