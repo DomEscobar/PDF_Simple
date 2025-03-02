@@ -5,7 +5,7 @@ import TextAnnotation from './TextAnnotation';
 import DrawingCanvas from './DrawingCanvas';
 import SignatureBox from './SignatureBox';
 import ImageAnnotation from './ImageAnnotation';
-import { Annotation } from '@/types';
+import { Annotation, DrawingAnnotation } from '@/types';
 
 interface PDFAnnotationsLayerProps {
   // Make these props optional since we'll also use the Redux store
@@ -58,7 +58,7 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
             return (
               <DrawingCanvas
                 key={annotation.id}
-                drawingAnnotation={annotation}
+                drawingAnnotation={annotation as DrawingAnnotation}
                 isSelected={isSelected}
               />
             );
