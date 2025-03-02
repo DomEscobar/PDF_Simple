@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -11,6 +10,7 @@ import TextAnnotation from './TextAnnotation';
 import SignatureBox from './SignatureBox';
 import { Annotation, Position } from '@/types';
 import { toast } from 'sonner';
+import { showEditingToolbar, hideAllToolbars } from '@/utils/textEditingTools';
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -47,12 +47,20 @@ const PDFViewer: React.FC = () => {
       // Make each text element editable
       element.setAttribute('contenteditable', 'true');
       
+      // Save original font size for relative sizing
+      const computedStyle = window.getComputedStyle(element);
+      const fontSize = computedStyle.fontSize;
+      element.setAttribute('data-original-font-size', fontSize);
+      
       // Add styling for better UX
       element.classList.add('pdf-editable-text');
       
       // Add focus and blur event handlers
       element.addEventListener('focus', handleTextFocus);
       element.addEventListener('blur', handleTextBlur);
+      
+      // Add click handler for the toolbar
+      element.addEventListener('click', handleTextClick);
     });
 
     // Add more CSS for the editable text
@@ -66,6 +74,9 @@ const PDFViewer: React.FC = () => {
     
     // Save original text for potential restoration
     element.setAttribute('data-original-text', element.textContent || '');
+    
+    // Hide any existing toolbars (new one will be shown on click)
+    hideAllToolbars();
   };
 
   // Handle blur on text element
@@ -81,6 +92,20 @@ const PDFViewer: React.FC = () => {
     
     // Notify about edit
     toast.success('Text updated');
+  };
+  
+  // Handle click on text element to show the editing toolbar
+  const handleTextClick = (e: MouseEvent) => {
+    const element = e.target as HTMLElement;
+    
+    // Don't show toolbar if this text is deleted (white on white)
+    if (element.getAttribute('data-deleted') === 'true') return;
+    
+    // Only show the toolbar when the element is not being edited
+    if (!element.matches(':focus')) {
+      e.stopPropagation();
+      showEditingToolbar(element);
+    }
   };
 
   // Add styles for editable text
@@ -130,6 +155,9 @@ const PDFViewer: React.FC = () => {
       
       dispatch(setIsDrawing(true));
     }
+    
+    // Close any open toolbars when clicking elsewhere
+    hideAllToolbars();
   };
 
   // Handle document load success
