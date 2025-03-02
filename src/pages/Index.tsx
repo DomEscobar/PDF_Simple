@@ -38,10 +38,6 @@ const Index: React.FC = () => {
   return (
     <Provider store={store}>
       <div className="w-full h-screen flex flex-col overflow-hidden">
-        <header className="bg-editor-panel py-3 px-6 border-b border-editor-border">
-          <h1 className="text-2xl font-light tracking-tight">Advanced PDF Editor</h1>
-        </header>
-        
         <main className="flex-1 overflow-hidden">
           <PDFEditorApp />
         </main>

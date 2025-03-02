@@ -12,9 +12,6 @@ import {
 } from '@/store/slices/annotationSlice';
 import {
   loadPDF,
-  nextPage,
-  previousPage,
-  setCurrentPage,
   zoomIn,
   zoomOut,
 } from '@/store/slices/pdfSlice';
@@ -31,8 +28,6 @@ import {
   ZoomIn,
   ZoomOut,
   FileText,
-  ChevronLeft,
-  ChevronRight,
   Trash,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -41,7 +36,6 @@ import { Position } from '@/types';
 const Toolbar: React.FC = () => {
   const dispatch = useAppDispatch();
   const { activeTool, selectedColor, lineThickness, history } = useAppSelector(state => state.annotation);
-  const { currentPage, totalPages } = useAppSelector(state => state.pdf);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showLineThickness, setShowLineThickness] = useState(false);
@@ -271,27 +265,6 @@ const Toolbar: React.FC = () => {
             onClick={() => dispatch(zoomIn())}
             icon={<ZoomIn size={18} />}
             tooltip="Zoom In"
-          />
-        </div>
-        
-        {/* Page navigation */}
-        <div className="flex items-center gap-2 border-r border-editor-border pr-2">
-          <ActionButton
-            onClick={() => dispatch(previousPage())}
-            icon={<ChevronLeft size={18} />}
-            tooltip="Previous Page"
-            className="disabled:opacity-50"
-            disabled={currentPage <= 1}
-          />
-          <div className="text-sm">
-            Page {currentPage} of {totalPages || 1}
-          </div>
-          <ActionButton
-            onClick={() => dispatch(nextPage())}
-            icon={<ChevronRight size={18} />}
-            tooltip="Next Page"
-            className="disabled:opacity-50"
-            disabled={currentPage >= totalPages}
           />
         </div>
         
