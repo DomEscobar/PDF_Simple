@@ -72,25 +72,6 @@ export const handleTextFocus = (e: Event) => {
 export const handleTextBlur = (e: Event) => {
   const element = e.target as HTMLElement;
   element.classList.remove('pdf-text-editing');
-  
-  // If empty, restore original text
-  if (!element.textContent?.trim()) {
-    const originalText = element.getAttribute('data-original-text') || '';
-    element.textContent = originalText;
-  }
-  
-  // Restore original styles if we're not explicitly keeping the changes
-  // (in this case, we're keeping the changes to maintain visibility)
-  const keepChanges = true; // Set this to false if you want to restore original styles
-  
-  if (!keepChanges) {
-    const originalColor = element.getAttribute('data-original-color') || '';
-    const originalBg = element.getAttribute('data-original-bg') || '';
-    element.style.color = originalColor;
-    element.style.backgroundColor = originalBg;
-  }
-  
-  toast.success('Text updated');
 };
 
 // Add styles for editable text
