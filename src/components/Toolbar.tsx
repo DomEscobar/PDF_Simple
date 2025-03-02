@@ -36,6 +36,7 @@ import { Position } from '@/types';
 const Toolbar: React.FC = () => {
   const dispatch = useAppDispatch();
   const { activeTool, selectedColor, lineThickness, history } = useAppSelector(state => state.annotation);
+  const { currentPage } = useAppSelector(state => state.pdf);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showLineThickness, setShowLineThickness] = useState(false);
@@ -149,11 +150,12 @@ const Toolbar: React.FC = () => {
       return;
     }
     
-    // Create signature annotation
+    // Create signature annotation with currentPage from the store
     dispatch(createSignatureAnnotation({
       position: { x: 100, y: 100 },
       size: { width: 300, height: 150 },
       path: signaturePath,
+      pageNumber: currentPage, // Add the current page number from the store
     }));
     
     // Exit signature mode
