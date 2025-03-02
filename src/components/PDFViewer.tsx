@@ -22,7 +22,6 @@ const PDFViewer: React.FC = () => {
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<Error | null>(null);
-  const [editingElements, setEditingElements] = useState<HTMLElement[]>([]);
 
   // Make text elements editable after PDF rendering
   useEffect(() => {
@@ -54,6 +53,9 @@ const PDFViewer: React.FC = () => {
       element.addEventListener('focus', handleTextFocus);
       element.addEventListener('blur', handleTextBlur);
     });
+
+    // Add more CSS for the editable text
+    addEditableTextStyles();
   };
 
   // Handle focus on text element
@@ -64,38 +66,15 @@ const PDFViewer: React.FC = () => {
     // Save original text for potential restoration
     element.setAttribute('data-original-text', element.textContent || '');
     
-    // Create a copy overlay element to hide the original text
-    const overlay = createOverlayElement(element);
+    // Fix visibility issue by setting text color to black
+    element.style.color = 'black';
+    element.style.backgroundColor = 'white';
     
-    // Keep track of editing elements
-    setEditingElements(prev => [...prev, overlay]);
-    
-    // Move the focus back to the original element
-    setTimeout(() => element.focus(), 0);
-  };
-
-  // Create an overlay element that copies the original element's style and position
-  const createOverlayElement = (originalElement: HTMLElement): HTMLElement => {
-    const computedStyle = window.getComputedStyle(originalElement);
-    const rect = originalElement.getBoundingClientRect();
-    
-    // Create the overlay element
-    const overlay = document.createElement('div');
-    overlay.classList.add('text-overlay');
-    
-    // Copy the original element's style and position
-    overlay.style.position = 'absolute';
-    overlay.style.left = `${originalElement.offsetLeft}px`;
-    overlay.style.top = `${originalElement.offsetTop}px`;
-    overlay.style.width = `${originalElement.offsetWidth}px`;
-    overlay.style.height = `${originalElement.offsetHeight}px`;
-    overlay.style.backgroundColor = 'white';
-    overlay.style.zIndex = '5'; // Between PDF and edited text
-    
-    // Append to the same parent
-    originalElement.parentElement?.appendChild(overlay);
-    
-    return overlay;
+    // Store original styles for restoration on blur
+    const originalColor = window.getComputedStyle(element).color;
+    const originalBg = window.getComputedStyle(element).backgroundColor;
+    element.setAttribute('data-original-color', originalColor);
+    element.setAttribute('data-original-bg', originalBg);
   };
 
   // Handle blur on text element
@@ -109,26 +88,68 @@ const PDFViewer: React.FC = () => {
       element.textContent = originalText;
     }
     
-    // Remove any overlay elements we created
-    removeOverlays();
+    // Restore original styles if we're not explicitly keeping the changes
+    // (in this case, we're keeping the changes to maintain visibility)
+    const keepChanges = true; // Set this to false if you want to restore original styles
+    
+    if (!keepChanges) {
+      const originalColor = element.getAttribute('data-original-color') || '';
+      const originalBg = element.getAttribute('data-original-bg') || '';
+      element.style.color = originalColor;
+      element.style.backgroundColor = originalBg;
+    }
     
     // Notify about edit
     toast.success('Text updated');
   };
 
-  // Remove all overlay elements
-  const removeOverlays = () => {
-    const overlays = document.querySelectorAll('.text-overlay');
-    overlays.forEach(overlay => overlay.parentElement?.removeChild(overlay));
-    setEditingElements([]);
+  // Add styles for editable text
+  const addEditableTextStyles = () => {
+    // Check if styles already exist
+    if (document.getElementById('pdf-editable-styles')) return;
+    
+    // Create style element
+    const styleElement = document.createElement('style');
+    styleElement.id = 'pdf-editable-styles';
+    
+    // Define styles
+    styleElement.textContent = `
+      .pdf-editable-text {
+        cursor: text;
+        transition: background-color 0.2s linear;
+        border-radius: 2px;
+        padding: 1px;
+        position: relative;
+        min-width: 1em;
+      }
+      .pdf-editable-text:hover {
+        background-color: rgba(255, 255, 0, 0.2);
+        outline: 1px dashed rgba(0, 0, 0, 0.3);
+      }
+      .pdf-text-editing {
+        background-color: white !important;
+        color: black !important;
+        outline: 2px solid rgba(0, 120, 255, 0.7) !important;
+        box-shadow: 0 0 8px rgba(0, 120, 255, 0.3);
+        min-width: 1em;
+        z-index: 100;
+        position: relative;
+      }
+      .pdf-text-editing::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: white;
+        z-index: -1;
+      }
+    `;
+    
+    // Add styles to document
+    document.head.appendChild(styleElement);
   };
-
-  // Clean up overlays when component unmounts or PDF changes
-  useEffect(() => {
-    return () => {
-      removeOverlays();
-    };
-  }, [url, currentPage]);
 
   // Handle PDF click (only for drawing now)
   const handlePDFClick = (e: React.MouseEvent) => {
