@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -22,6 +23,8 @@ const PDFViewer: React.FC = () => {
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<Error | null>(null);
+  const [activeEditElement, setActiveEditElement] = useState<HTMLElement | null>(null);
+  const [clonedElement, setClonedElement] = useState<HTMLElement | null>(null);
 
   // Make text elements editable after PDF rendering
   useEffect(() => {
@@ -34,6 +37,15 @@ const PDFViewer: React.FC = () => {
 
     return () => clearTimeout(timeout);
   }, [url, currentPage, isLoading, scale]);
+
+  // Clean up clone element when unmounting
+  useEffect(() => {
+    return () => {
+      if (clonedElement && clonedElement.parentNode) {
+        clonedElement.parentNode.removeChild(clonedElement);
+      }
+    };
+  }, []);
 
   // Function to make text elements editable
   const makeTextElementsEditable = () => {
@@ -53,86 +65,128 @@ const PDFViewer: React.FC = () => {
       element.addEventListener('focus', handleTextFocus);
       element.addEventListener('blur', handleTextBlur);
     });
+  };
 
-    // Add more CSS for the editable text
-    addEditableTextStyles();
+  // Create a clone of the element being edited
+  const createClone = (originalElement: HTMLElement) => {
+    // Create a clone of the original element
+    const clone = originalElement.cloneNode(true) as HTMLElement;
+    
+    // Get computed style to match exactly
+    const computedStyle = window.getComputedStyle(originalElement);
+    
+    // Apply the same style properties
+    clone.style.position = 'absolute';
+    clone.style.left = `${originalElement.offsetLeft}px`;
+    clone.style.top = `${originalElement.offsetTop}px`;
+    clone.style.width = `${originalElement.offsetWidth}px`;
+    clone.style.height = `${originalElement.offsetHeight}px`;
+    clone.style.fontSize = computedStyle.fontSize;
+    clone.style.fontFamily = computedStyle.fontFamily;
+    clone.style.fontWeight = computedStyle.fontWeight;
+    clone.style.lineHeight = computedStyle.lineHeight;
+    clone.style.transform = computedStyle.transform;
+    clone.style.transformOrigin = computedStyle.transformOrigin;
+    
+    // Make it visible with white background and black text
+    clone.style.backgroundColor = 'white';
+    clone.style.color = 'black';
+    clone.style.border = '1px solid rgba(0, 120, 255, 0.7)';
+    clone.style.boxShadow = '0 0 8px rgba(0, 120, 255, 0.3)';
+    clone.style.zIndex = '1000';
+    clone.style.borderRadius = '2px';
+    clone.style.padding = '0 2px';
+    clone.style.outline = 'none';
+    clone.style.whiteSpace = 'pre';
+    
+    // Make clone editable
+    clone.setAttribute('contenteditable', 'true');
+    
+    // Add class for identification
+    clone.classList.add('pdf-clone-editing');
+    
+    // Add event listeners to the clone
+    clone.addEventListener('input', (e) => {
+      if (originalElement) {
+        originalElement.textContent = clone.textContent;
+      }
+    });
+    
+    clone.addEventListener('blur', () => {
+      handleCloneBlur(clone, originalElement);
+    });
+    
+    // Add clone to the document
+    if (originalElement.parentNode) {
+      originalElement.parentNode.appendChild(clone);
+    }
+    
+    // Focus the clone
+    setTimeout(() => {
+      clone.focus();
+    }, 10);
+    
+    return clone;
   };
 
   // Handle focus on text element
   const handleTextFocus = (e: Event) => {
     const element = e.target as HTMLElement;
-    element.classList.add('pdf-text-editing');
     
     // Save original text for potential restoration
     element.setAttribute('data-original-text', element.textContent || '');
     
-    // Fix visibility issue by setting text color to black
-    element.style.color = 'black';
-    element.style.backgroundColor = 'white';
+    // Create the clone for editing
+    const clone = createClone(element);
     
-    // Store original styles for restoration on blur
-    const originalColor = window.getComputedStyle(element).color;
-    const originalBg = window.getComputedStyle(element).backgroundColor;
-    element.setAttribute('data-original-color', originalColor);
-    element.setAttribute('data-original-bg', originalBg);
+    // Hide the original element during editing
+    element.style.opacity = '0';
+    
+    // Store references to active elements
+    setActiveEditElement(element);
+    setClonedElement(clone);
   };
 
-  // Handle blur on text element
-  const handleTextBlur = (e: Event) => {
-    const element = e.target as HTMLElement;
-    element.classList.remove('pdf-text-editing');
-    
-    // If empty, restore original text
-    if (!element.textContent?.trim()) {
-      const originalText = element.getAttribute('data-original-text') || '';
-      element.textContent = originalText;
+  // Handle blur on clone element
+  const handleCloneBlur = (clone: HTMLElement, originalElement: HTMLElement) => {
+    // Transfer content from clone to original
+    if (originalElement) {
+      if (!clone.textContent?.trim()) {
+        // If empty, restore original text
+        const originalText = originalElement.getAttribute('data-original-text') || '';
+        originalElement.textContent = originalText;
+      } else {
+        originalElement.textContent = clone.textContent;
+      }
+      
+      // Show the original element again
+      originalElement.style.opacity = '1';
     }
     
-    // Restore original styles if we're not explicitly keeping the changes
-    // (in this case, we're keeping the changes to maintain visibility)
-    const keepChanges = true; // Set this to false if you want to restore original styles
-    
-    if (!keepChanges) {
-      const originalColor = element.getAttribute('data-original-color') || '';
-      const originalBg = element.getAttribute('data-original-bg') || '';
-      element.style.color = originalColor;
-      element.style.backgroundColor = originalBg;
+    // Remove the clone from DOM
+    if (clone.parentNode) {
+      clone.parentNode.removeChild(clone);
     }
+    
+    // Clear references
+    setActiveEditElement(null);
+    setClonedElement(null);
     
     // Notify about edit
     toast.success('Text updated');
   };
 
-  // Add styles for editable text
-  const addEditableTextStyles = () => {
-    // Check if styles already exist
-    if (document.getElementById('pdf-editable-styles')) return;
+  // Handle blur on text element
+  const handleTextBlur = (e: Event) => {
+    // This will be handled by handleCloneBlur for actual text updates
+    // Only needed if somehow the original gets focus and then blur without clone creation
+    const element = e.target as HTMLElement;
     
-    // Create style element
-    const styleElement = document.createElement('style');
-    styleElement.id = 'pdf-editable-styles';
-    
-    // Define styles
-    styleElement.textContent = `
-      .pdf-editable-text {
-        cursor: text;
-        transition: background-color 0.2s linear;
-        border-radius: 2px;
-        padding: 1px;
-      }
-      .pdf-editable-text:hover {
-        background-color: rgba(255, 255, 0, 0.2);
-        outline: 1px dashed rgba(0, 0, 0, 0.3);
-      }
-      .pdf-text-editing {
-        background-color: rgba(255, 255, 255, 0.9) !important;
-        outline: 2px solid rgba(0, 120, 255, 0.7) !important;
-        box-shadow: 0 0 8px rgba(0, 120, 255, 0.3);
-      }
-    `;
-    
-    // Add styles to document
-    document.head.appendChild(styleElement);
+    // If no clone is active and this element is being edited, restore visibility
+    if (!clonedElement && activeEditElement === element) {
+      element.style.opacity = '1';
+      setActiveEditElement(null);
+    }
   };
 
   // Handle PDF click (only for drawing now)
