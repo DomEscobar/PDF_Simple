@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -108,22 +107,6 @@
     @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-lg rounded-lg;
   }
 
-  .annotation {
-    @apply absolute border-2 border-transparent cursor-move transition-all duration-150;
-  }
-
-  .annotation:hover {
-    @apply border-primary;
-  }
-
-  .annotation-handle {
-    @apply absolute w-3 h-3 bg-primary rounded-full border border-white z-10 opacity-0 transition-opacity duration-200;
-  }
-
-  .annotation:hover .annotation-handle {
-    @apply opacity-100;
-  }
-
   .color-option {
     @apply w-6 h-6 rounded-full cursor-pointer transition-transform duration-200 hover:scale-110 border-2;
   }
@@ -150,7 +133,7 @@
 }
 
 .canvas-container {
-  @apply absolute inset-0 z-10 pointer-events-none;
+  @apply absolute inset-0 pointer-events-none;
 }
 
 .canvas-container.active {
@@ -159,7 +142,7 @@
 
 /* Styles for editable PDF text */
 .textLayer {
-  z-index: 20;
+  z-index: 15;
 }
 
 .textLayer span {

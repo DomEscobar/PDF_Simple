@@ -14,30 +14,29 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
   selectedAnnotationId 
 }) => {
   return (
-    <>
+    <div className="absolute inset-0 z-30 pointer-events-none">
       {history.map((annotation: Annotation) => {
-        switch (annotation.type) {
-          case 'text':
-            return (
+        if (annotation.type === 'drawing') return null; // Drawing annotations are handled by DrawingCanvas
+        
+        // Each annotation gets pointer-events-auto to be interactive
+        return (
+          <div key={annotation.id} className="pointer-events-auto">
+            {annotation.type === 'text' && (
               <TextAnnotation
-                key={annotation.id}
                 annotation={annotation}
                 isSelected={selectedAnnotationId === annotation.id}
               />
-            );
-          case 'signature':
-            return (
+            )}
+            {annotation.type === 'signature' && (
               <SignatureBox
-                key={annotation.id}
                 annotation={annotation}
                 isSelected={selectedAnnotationId === annotation.id}
               />
-            );
-          default:
-            return null;
-        }
+            )}
+          </div>
+        );
       })}
-    </>
+    </div>
   );
 };
 

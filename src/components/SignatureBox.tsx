@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+
+import React, { useEffect, useRef } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { deleteAnnotation, setSelectedAnnotationId, updateAnnotation } from '@/store/slices/annotationSlice';
 import { SignatureAnnotation as SignatureAnnotationType, Position } from '@/types';
@@ -13,9 +14,9 @@ const SignatureBox: React.FC<SignatureBoxProps> = ({ annotation, isSelected }) =
   const dispatch = useAppDispatch();
   const { activeTool } = useAppSelector(state => state.annotation);
   const { scale } = useAppSelector(state => state.pdf);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [isDragging, setIsDragging] = React.useState(false);
+  const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 });
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -95,16 +96,17 @@ const SignatureBox: React.FC<SignatureBoxProps> = ({ annotation, isSelected }) =
 
   return (
     <div
-      className={`annotation ${isSelected ? 'ring-2 ring-primary' : ''}`}
+      className={`absolute ${isSelected ? 'ring-2 ring-primary' : 'border border-gray-200'}`}
       style={{
         left: annotation.position.x * scale,
         top: annotation.position.y * scale,
         width: annotation.size.width * scale,
         height: annotation.size.height * scale,
-        zIndex: isSelected ? 100 : 10,
+        zIndex: isSelected ? 35 : 30,
+        backgroundColor: 'white',
+        borderRadius: '4px',
         cursor: activeTool === 'select' ? 'move' : 'default',
-        backgroundColor: 'transparent',
-        transition: 'none'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       }}
       onMouseDown={handleMouseDown}
     >

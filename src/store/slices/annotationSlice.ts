@@ -1,3 +1,4 @@
+
 import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
 import { Position, Color, LineThickness, Annotation, EditorHistory, TextAnnotation, DrawingAnnotation, SignatureAnnotation } from '@/types';
@@ -51,16 +52,16 @@ export const setIsDrawing = createAction<boolean>('annotation/setIsDrawing');
 export const addPointToPath = createAction<Position>('annotation/addPointToPath');
 
 // Action to finish drawing
-export const finishDrawing = createAction('annotation/finishDrawing');
+export const finishDrawing = createAction<number>('annotation/finishDrawing');
 
 // Action to undo
-export const undo = createAction<null>('annotation/undo');
+export const undo = createAction('annotation/undo');
 
 // Action to redo
-export const redo = createAction<null>('annotation/redo');
+export const redo = createAction('annotation/redo');
 
 // Action to clear annotations
-export const clearAnnotations = createAction<null>('annotation/clearAnnotations');
+export const clearAnnotations = createAction('annotation/clearAnnotations');
 
 // Action to update annotation
 export const updateAnnotation = createAction<Annotation>('annotation/updateAnnotation');
@@ -84,102 +85,7 @@ export const createTextAnnotation = createAction<{
 const annotationSlice = createSlice({
   name: 'annotation',
   initialState,
-  reducers: {
-    // Reducer to handle drawing state
-    setIsDrawingReducer: (state, action: PayloadAction<boolean>) => {
-      state.isDrawing = action.payload;
-    },
-    // Reducer to handle adding a point to the current path
-    addPointToPathReducer: (state, action: PayloadAction<Position>) => {
-      if (!state.isDrawing) return;
-      
-      const { x, y } = action.payload;
-      
-      if (!state.currentPath) {
-        // Start a new path
-        state.currentPath = {
-          points: [{ x, y }],
-          color: state.selectedColor,
-          thickness: state.lineThickness === 'thin' ? 2 : state.lineThickness === 'medium' ? 5 : 8,
-        };
-      } else {
-        // Add to existing path
-        state.currentPath.points.push({ x, y });
-      }
-    },
-    // Reducer to handle finishing the drawing
-    finishDrawingReducer: (state) => {
-      state.isDrawing = false;
-    },
-    // Reducer to handle undo
-    undoReducer: (state) => {
-      if (state.history.past.length === 0) return;
-      
-      const previous = state.history.past[state.history.past.length - 1];
-      const newPast = state.history.past.slice(0, state.history.past.length - 1);
-      
-      state.history = {
-        past: newPast,
-        present: previous,
-        future: [state.history.present, ...state.history.future],
-      };
-    },
-    // Reducer to handle redo
-    redoReducer: (state) => {
-      if (state.history.future.length === 0) return;
-      
-      const next = state.history.future[0];
-      const newFuture = state.history.future.slice(1);
-      
-      state.history = {
-        past: [...state.history.past, state.history.present],
-        present: next,
-        future: newFuture,
-      };
-    },
-    // Reducer to handle clear annotations
-    clearAnnotationsReducer: (state) => {
-      state.history = {
-        past: [...state.history.past, state.history.present],
-        present: [],
-        future: [],
-      };
-    },
-    // Reducer to handle update annotation
-    updateAnnotationReducer: (state, action: PayloadAction<Annotation>) => {
-      const updatedAnnotation = action.payload;
-      
-      // Find the index of the annotation to update
-      const annotationIndex = state.history.present.findIndex(annotation => annotation.id === updatedAnnotation.id);
-      
-      if (annotationIndex === -1) return;
-      
-      // Create a new array with the updated annotation
-      const newPresent = [...state.history.present];
-      newPresent[annotationIndex] = updatedAnnotation;
-      
-      // Update the state
-      state.history = {
-        past: [...state.history.past, state.history.present],
-        present: newPresent,
-        future: [],
-      };
-    },
-    // Reducer to handle delete annotation
-    deleteAnnotationReducer: (state, action: PayloadAction<string>) => {
-      const annotationId = action.payload;
-      
-      // Filter out the annotation to delete
-      const newPresent = state.history.present.filter(annotation => annotation.id !== annotationId);
-      
-      // Update the state
-      state.history = {
-        past: [...state.history.past, state.history.present],
-        present: newPresent,
-        future: [],
-      };
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
       // Handle active tool
@@ -201,6 +107,15 @@ const annotationSlice = createSlice({
       // Handle drawing state
       .addCase(setIsDrawing, (state, action: PayloadAction<boolean>) => {
         state.isDrawing = action.payload;
+        
+        // Initialize current path if starting to draw
+        if (action.payload && !state.currentPath) {
+          state.currentPath = {
+            points: [],
+            color: state.selectedColor,
+            thickness: state.lineThickness === 'thin' ? 2 : state.lineThickness === 'medium' ? 5 : 8,
+          };
+        }
       })
       // Handle adding a point to the current path
       .addCase(addPointToPath, (state, action: PayloadAction<Position>) => {
@@ -221,22 +136,27 @@ const annotationSlice = createSlice({
         }
       })
       // Handle finishing the drawing
-      .addCase(finishDrawing, (state) => {
-        if (!state.currentPath) return state;
+      .addCase(finishDrawing, (state, action: PayloadAction<number>) => {
+        if (!state.currentPath || state.currentPath.points.length < 2) {
+          state.isDrawing = false;
+          state.currentPath = undefined;
+          return state;
+        }
         
-        const { currentPage } = store.getState().pdf;
+        const pageNumber = action.payload;
         
         // Create new drawing annotation
         const newAnnotation: DrawingAnnotation = {
           id: uuidv4(),
           type: 'drawing',
-          paths: state.currentPath ? [state.currentPath] : [],
+          paths: [{ ...state.currentPath }],
           createdAt: Date.now(),
-          pageNumber: currentPage,
+          pageNumber: pageNumber,
         };
         
         // Add to history
         const newHistory = [...state.history.present, newAnnotation];
+        
         return {
           ...state,
           history: {
@@ -326,7 +246,7 @@ const annotationSlice = createSlice({
           type: 'text',
           content,
           position,
-          size: { width: 200, height: 50 },
+          size: { width: 200, height: 100 },
           color: state.selectedColor,
           fontSize: 16,
           createdAt: Date.now(),
@@ -334,12 +254,13 @@ const annotationSlice = createSlice({
         };
         
         // Add to history
-        const newHistory = [...state.history.present, newAnnotation];
+        const newPresent = [...state.history.present, newAnnotation];
+        
         return {
           ...state,
           history: {
             past: [...state.history.past, state.history.present],
-            present: newHistory,
+            present: newPresent,
             future: [],
           },
           selectedAnnotationId: newAnnotation.id,
@@ -375,16 +296,5 @@ const annotationSlice = createSlice({
       });
   },
 });
-
-export const {
-  setIsDrawingReducer,
-  addPointToPathReducer,
-  finishDrawingReducer,
-  undoReducer,
-  redoReducer,
-  clearAnnotationsReducer,
-  updateAnnotationReducer,
-  deleteAnnotationReducer,
-} = annotationSlice.actions;
 
 export default annotationSlice.reducer;

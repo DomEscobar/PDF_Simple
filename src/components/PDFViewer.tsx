@@ -1,10 +1,11 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setTotalPages, loadPDF } from '@/store/slices/pdfSlice';
-import { setIsDrawing } from '@/store/slices/annotationSlice';
+import { setIsDrawing, createTextAnnotation } from '@/store/slices/annotationSlice';
 import DrawingCanvas from './DrawingCanvas';
 import { Position } from '@/types';
 import { toast } from 'sonner';
@@ -39,12 +40,14 @@ const PDFViewer: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [url, isLoading, scale]);
 
-  // Handle PDF click (only for drawing now)
+  // Handle PDF click
   const handlePDFClick = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
     
-    // Only handle clicks for drawing
+    // Handle different tool clicks
     if (activeTool === 'draw') {
+      // Drawing is handled by DrawingCanvas component
+    } else if (activeTool === 'text') {
       // Get click position relative to the PDF container
       const rect = containerRef.current.getBoundingClientRect();
       const position: Position = {
@@ -52,7 +55,8 @@ const PDFViewer: React.FC = () => {
         y: (e.clientY - rect.top) / scale,
       };
       
-      dispatch(setIsDrawing(true));
+      // Create text annotation at click position
+      dispatch(createTextAnnotation({ position }));
     }
   };
 
@@ -62,7 +66,7 @@ const PDFViewer: React.FC = () => {
     setIsLoading(false);
     // Initialize page sizes array
     setPageSizes(Array(numPages).fill({ width: 0, height: 0 }));
-    toast(`Document loaded with ${numPages} pages`);
+    toast.success(`Document loaded with ${numPages} pages`);
   };
 
   // Handle document load error
@@ -214,11 +218,12 @@ const PDFViewer: React.FC = () => {
                 <DrawingCanvas
                   pageWidth={pageSizes[index]?.width || 0}
                   pageHeight={pageSizes[index]?.height || 0}
+                  pageNumber={index + 1}
                 />
                 
                 {/* Render all annotations for each page */}
                 <PDFAnnotationsLayer 
-                  history={history.present.filter(item => (item as any).pageNumber === index + 1)} 
+                  history={history.present.filter(item => item.pageNumber === index + 1)} 
                   selectedAnnotationId={selectedAnnotationId}
                 />
               </div>

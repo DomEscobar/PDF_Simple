@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { deleteAnnotation, setSelectedAnnotationId, updateAnnotation } from '@/store/slices/annotationSlice';
@@ -69,53 +70,36 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         const deltaY = e.clientY - dragOffset.y;
         
         let newSize: Size = { ...annotation.size };
+        let newPosition: Position = { ...annotation.position };
         
         switch (resizeDirection) {
           case 'ne':
             newSize.width = Math.max(50, annotation.size.width + (deltaX / scale));
             newSize.height = Math.max(30, annotation.size.height - (deltaY / scale));
-            dispatch(updateAnnotation({
-              ...annotation,
-              size: newSize,
-              position: {
-                x: annotation.position.x,
-                y: annotation.position.y + (deltaY / scale)
-              }
-            }));
+            newPosition.y = annotation.position.y + (deltaY / scale);
             break;
           case 'se':
             newSize.width = Math.max(50, annotation.size.width + (deltaX / scale));
             newSize.height = Math.max(30, annotation.size.height + (deltaY / scale));
-            dispatch(updateAnnotation({
-              ...annotation,
-              size: newSize
-            }));
             break;
           case 'sw':
             newSize.width = Math.max(50, annotation.size.width - (deltaX / scale));
             newSize.height = Math.max(30, annotation.size.height + (deltaY / scale));
-            dispatch(updateAnnotation({
-              ...annotation,
-              size: newSize,
-              position: {
-                x: annotation.position.x + (deltaX / scale),
-                y: annotation.position.y
-              }
-            }));
+            newPosition.x = annotation.position.x + (deltaX / scale);
             break;
           case 'nw':
             newSize.width = Math.max(50, annotation.size.width - (deltaX / scale));
             newSize.height = Math.max(30, annotation.size.height - (deltaY / scale));
-            dispatch(updateAnnotation({
-              ...annotation,
-              size: newSize,
-              position: {
-                x: annotation.position.x + (deltaX / scale),
-                y: annotation.position.y + (deltaY / scale)
-              }
-            }));
+            newPosition.x = annotation.position.x + (deltaX / scale);
+            newPosition.y = annotation.position.y + (deltaY / scale);
             break;
         }
+        
+        dispatch(updateAnnotation({
+          ...annotation,
+          size: newSize,
+          position: newPosition
+        }));
         
         setDragOffset({
           x: e.clientX,
@@ -155,14 +139,16 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
 
   return (
     <div
-      className={`annotation ${isSelected ? 'ring-2 ring-primary' : ''}`}
+      className={`absolute ${isSelected ? 'ring-2 ring-primary' : 'border border-gray-200'}`}
       style={{
         left: annotation.position.x * scale,
         top: annotation.position.y * scale,
         width: annotation.size.width * scale,
         height: annotation.size.height * scale,
-        zIndex: isSelected ? 100 : 10,
-        transition: 'none'
+        backgroundColor: 'white',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+        borderRadius: '4px',
+        zIndex: isSelected ? 35 : 30
       }}
       onMouseDown={handleMouseDown}
     >
@@ -174,21 +160,20 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         style={{
           color: annotation.color,
           fontSize: `${annotation.fontSize * scale}px`,
-          cursor: activeTool === 'select' ? 'move' : 'default',
-          transition: 'none'
+          cursor: activeTool === 'select' ? 'text' : 'default'
         }}
         onClick={(e) => e.stopPropagation()}
       />
       
       {isSelected && activeTool === 'select' && (
         <>
-          <div className="annotation-handle top-0 left-0 cursor-nw-resize" 
+          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white top-0 left-0 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize" 
                onMouseDown={(e) => handleResizeStart(e, 'nw')} />
-          <div className="annotation-handle top-0 right-0 cursor-ne-resize" 
+          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white top-0 right-0 translate-x-1/2 -translate-y-1/2 cursor-ne-resize" 
                onMouseDown={(e) => handleResizeStart(e, 'ne')} />
-          <div className="annotation-handle bottom-0 left-0 cursor-sw-resize" 
+          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-sw-resize" 
                onMouseDown={(e) => handleResizeStart(e, 'sw')} />
-          <div className="annotation-handle bottom-0 right-0 cursor-se-resize" 
+          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-se-resize" 
                onMouseDown={(e) => handleResizeStart(e, 'se')} />
           
           <button
