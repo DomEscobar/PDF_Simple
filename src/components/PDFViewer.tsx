@@ -4,7 +4,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setTotalPages, loadPDF } from '@/store/slices/pdfSlice';
-import { setIsDrawing, createTextAnnotation } from '@/store/slices/annotationSlice';
+import { setIsDrawing } from '@/store/slices/annotationSlice';
 import DrawingCanvas from './DrawingCanvas';
 import { Position } from '@/types';
 import { toast } from 'sonner';
@@ -39,23 +39,20 @@ const PDFViewer: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [url, isLoading, scale]);
 
-  // Handle PDF click (for drawing and text annotations)
+  // Handle PDF click (only for drawing now)
   const handlePDFClick = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
     
-    const rect = containerRef.current.getBoundingClientRect();
-    const position: Position = {
-      x: (e.clientX - rect.left) / scale,
-      y: (e.clientY - rect.top) / scale,
-    };
-    
-    // Handle different tool actions
+    // Only handle clicks for drawing
     if (activeTool === 'draw') {
+      // Get click position relative to the PDF container
+      const rect = containerRef.current.getBoundingClientRect();
+      const position: Position = {
+        x: (e.clientX - rect.left) / scale,
+        y: (e.clientY - rect.top) / scale,
+      };
+      
       dispatch(setIsDrawing(true));
-    } else if (activeTool === 'text') {
-      dispatch(createTextAnnotation({ position }));
-      // Show toast for better UX
-      toast.success('Text annotation created');
     }
   };
 

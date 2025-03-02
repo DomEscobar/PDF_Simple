@@ -1,4 +1,3 @@
-
 import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
 import { Position, Color, LineThickness, Annotation, EditorHistory, TextAnnotation, DrawingAnnotation, SignatureAnnotation } from '@/types';
@@ -55,13 +54,13 @@ export const addPointToPath = createAction<Position>('annotation/addPointToPath'
 export const finishDrawing = createAction('annotation/finishDrawing');
 
 // Action to undo
-export const undo = createAction('annotation/undo');
+export const undo = createAction<null>('annotation/undo');
 
 // Action to redo
-export const redo = createAction('annotation/redo');
+export const redo = createAction<null>('annotation/redo');
 
 // Action to clear annotations
-export const clearAnnotations = createAction('annotation/clearAnnotations');
+export const clearAnnotations = createAction<null>('annotation/clearAnnotations');
 
 // Action to update annotation
 export const updateAnnotation = createAction<Annotation>('annotation/updateAnnotation');
@@ -76,7 +75,7 @@ export const createSignatureAnnotation = createAction<{
   path: Position[];
 }>('annotation/createSignatureAnnotation');
 
-// Fixed createTextAnnotation action
+// Fix the createTextAnnotation action to include pageNumber
 export const createTextAnnotation = createAction<{
   position: Position;
   content?: string;

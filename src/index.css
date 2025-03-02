@@ -3,50 +3,85 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
 @layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 240 10% 3.9%;
+
     --card: 0 0% 100%;
     --card-foreground: 240 10% 3.9%;
+
     --popover: 0 0% 100%;
     --popover-foreground: 240 10% 3.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
+
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 98%;
+
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
+
     --muted: 210 40% 96.1%;
     --muted-foreground: 215.4 16.3% 46.9%;
+
     --accent: 210 40% 96.1%;
     --accent-foreground: 222.2 47.4% 11.2%;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
+
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.75rem;
+
+    --editor-background: 0 0% 98%;
+    --editor-foreground: 240 10% 3.9%;
+    --editor-panel: 0 0% 100%;
+    --editor-tool: 220 14% 96%;
+    --editor-hover: 210 40% 96.1%;
+    --editor-active: 210 100% 50%;
+    --editor-border: 214.3 31.8% 91.4%;
   }
 
   .dark {
-    --background: 20 14.3% 4.1%;
-    --foreground: 0 0% 95%;
-    --card: 24 9.8% 10%;
-    --card-foreground: 0 0% 95%;
-    --popover: 0 0% 9%;
-    --popover-foreground: 0 0% 95%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 98%;
+
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 48%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+
+    --editor-background: 240 10% 3.9%;
+    --editor-foreground: 0 0% 98%;
+    --editor-panel: 240 3.7% 15.9%;
+    --editor-tool: 240 5% 10%;
+    --editor-hover: 240 4% 16%;
+    --editor-active: 210 100% 50%;
+    --editor-border: 240 3.7% 15.9%;
   }
 }
 
@@ -55,55 +90,127 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', sans-serif;
   }
 }
 
-/* PDF Specific Styles */
+@layer components {
+  .tool-button {
+    @apply h-10 w-10 rounded-full flex items-center justify-center transition-all duration-300 bg-editor-tool hover:bg-editor-hover hover:scale-110 active:scale-95;
+  }
+
+  .tool-button.active {
+    @apply bg-editor-active text-primary-foreground;
+  }
+
+  .panel-glass {
+    @apply bg-white/80 backdrop-blur-lg border border-white/20 shadow-lg rounded-lg;
+  }
+
+  .annotation {
+    @apply absolute border-2 border-transparent cursor-move transition-all duration-150;
+  }
+
+  .annotation:hover {
+    @apply border-primary;
+  }
+
+  .annotation-handle {
+    @apply absolute w-3 h-3 bg-primary rounded-full border border-white z-10 opacity-0 transition-opacity duration-200;
+  }
+
+  .annotation:hover .annotation-handle {
+    @apply opacity-100;
+  }
+
+  .color-option {
+    @apply w-6 h-6 rounded-full cursor-pointer transition-transform duration-200 hover:scale-110 border-2;
+  }
+
+  .color-option.selected {
+    @apply ring-2 ring-primary ring-offset-2;
+  }
+
+  .thickness-option {
+    @apply flex items-center justify-center h-8 w-8 rounded-full cursor-pointer transition-all duration-200 hover:scale-110 bg-editor-tool hover:bg-editor-hover;
+  }
+
+  .thickness-option.selected {
+    @apply bg-editor-active text-primary-foreground;
+  }
+}
+
+.editor-wrapper {
+  @apply w-full h-full flex flex-col overflow-hidden bg-editor-background;
+}
+
 .pdf-container {
-  position: relative;
-  width: 100%;
-  min-height: 100vh;
-}
-
-.pdf-editable-text {
-  cursor: text;
-  transition: background-color 0.2s linear;
-  border-radius: 2px;
-  padding: 1px;
-}
-
-.pdf-editable-text:hover {
-  background-color: rgba(255, 255, 0, 0.2);
-  outline: 1px dashed rgba(0, 0, 0, 0.3);
-}
-
-.pdf-text-editing {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  outline: 2px solid rgba(0, 120, 255, 0.7) !important;
-  box-shadow: 0 0 8px rgba(0, 120, 255, 0.3);
-}
-
-/* Annotation Styles */
-.annotation {
-  position: absolute;
-}
-
-.annotation-handle {
-  position: absolute;
-  width: 10px;
-  height: 10px;
-  background-color: white;
-  border: 2px solid hsl(var(--primary));
-  border-radius: 50%;
-  z-index: 2;
-}
-
-.text-annotation {
-  min-width: 100px;
-  min-height: 30px;
+  @apply relative flex-1 overflow-auto;
 }
 
 .canvas-container {
-  pointer-events: auto;
+  @apply absolute inset-0 z-10 pointer-events-none;
+}
+
+.canvas-container.active {
+  @apply pointer-events-auto cursor-crosshair;
+}
+
+/* Styles for editable PDF text */
+.textLayer {
+  z-index: 20;
+}
+
+.textLayer span {
+  position: absolute;
+  white-space: pre;
+  transform-origin: 0% 0%;
+  line-height: 1;
+}
+
+.pdf-editable-text {
+  cursor: text !important;
+  transition: background-color 0.2s, color 0.2s !important;
+  border-radius: 2px !important;
+  padding: 1px !important;
+  min-width: 1em !important;
+}
+
+.pdf-editable-text:hover {
+  background-color: rgba(255, 255, 0, 0.2) !important;
+  outline: 1px dashed rgba(0, 0, 0, 0.3) !important;
+}
+
+.pdf-text-editing {
+  background-color: white !important;
+  color: black !important;
+  outline: 2px solid rgba(0, 120, 255, 0.7) !important;
+  box-shadow: 0 0 8px rgba(0, 120, 255, 0.3) !important;
+  min-width: 1em !important;
+  z-index: 100 !important;
+}
+
+/* Improve cursor interaction */
+.textLayer span {
+  pointer-events: all !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
 }

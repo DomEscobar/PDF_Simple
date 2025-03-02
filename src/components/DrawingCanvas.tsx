@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { finishDrawing, addPointToPath, setIsDrawing } from '@/store/slices/annotationSlice';
@@ -166,12 +165,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
   return (
     <canvas
       ref={canvasRef}
-      className="canvas-container absolute top-0 left-0 w-full h-full"
-      style={{
-        zIndex: activeTool === 'draw' ? 20 : 5, 
-        pointerEvents: activeTool === 'draw' ? 'auto' : 'none',
-        cursor: activeTool === 'draw' ? 'crosshair' : 'default'
-      }}
+      className={`canvas-container ${activeTool === 'draw' ? 'active' : ''}`}
       onMouseDown={handleDrawStart}
       onMouseMove={handleDrawMove}
       onMouseUp={handleDrawEnd}
