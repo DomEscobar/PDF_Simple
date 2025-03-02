@@ -64,7 +64,7 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				editor: {
-					DEFAULT: 'hsl(var(--editor-background))',
+					background: 'hsl(var(--editor-background))',
 					foreground: 'hsl(var(--editor-foreground))',
 					panel: 'hsl(var(--editor-panel))',
 					tool: 'hsl(var(--editor-tool))',

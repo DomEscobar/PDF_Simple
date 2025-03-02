@@ -1,4 +1,3 @@
-
 import React, { useCallback, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -20,7 +19,7 @@ import {
 } from '@/store/slices/pdfSlice';
 import ActionButton from './ActionButton';
 import {
-  Cursor,
+  MousePointer,
   FileDown,
   FileUp,
   Highlighter,
@@ -299,7 +298,7 @@ const Toolbar: React.FC = () => {
         <div className="flex items-center gap-2 border-r border-editor-border pr-2">
           <ActionButton
             onClick={() => dispatch(setActiveTool('select'))}
-            icon={<Cursor size={18} />}
+            icon={<MousePointer size={18} />}
             active={activeTool === 'select'}
             tooltip="Select Tool"
           />

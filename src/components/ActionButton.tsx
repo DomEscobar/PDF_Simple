@@ -9,6 +9,7 @@ type ActionButtonProps = {
   active?: boolean;
   className?: string;
   tooltip?: string;
+  disabled?: boolean;
 };
 
 const ActionButton: React.FC<ActionButtonProps> = ({
@@ -18,6 +19,7 @@ const ActionButton: React.FC<ActionButtonProps> = ({
   active = false,
   className,
   tooltip,
+  disabled = false,
 }) => {
   return (
     <div className="relative group">
@@ -26,9 +28,11 @@ const ActionButton: React.FC<ActionButtonProps> = ({
         className={cn(
           "tool-button",
           active && "active",
+          disabled && "opacity-50 cursor-not-allowed",
           className
         )}
         aria-label={label || tooltip}
+        disabled={disabled}
       >
         {icon}
       </button>
