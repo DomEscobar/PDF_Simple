@@ -1,16 +1,16 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { deleteAnnotation, setSelectedAnnotationId, updateAnnotation } from '@/store/slices/annotationSlice';
-import { TextAnnotation as TextAnnotationType, Position, Size } from '@/types';
+import { ImageAnnotation as ImageAnnotationType, Position, Size } from '@/types';
 import { X } from 'lucide-react';
 
-type TextAnnotationProps = {
-  annotation: TextAnnotationType;
+type ImageAnnotationProps = {
+  annotation: ImageAnnotationType;
   isSelected: boolean;
 };
 
-const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected }) => {
+const ImageAnnotation: React.FC<ImageAnnotationProps> = ({ annotation, isSelected }) => {
   const dispatch = useAppDispatch();
   const { activeTool } = useAppSelector(state => state.annotation);
   const { scale } = useAppSelector(state => state.pdf);
@@ -18,13 +18,6 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (isSelected && textareaRef.current) {
-      textareaRef.current.focus();
-    }
-  }, [isSelected]);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (activeTool !== 'select') return;
@@ -51,7 +44,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
     });
   };
 
-  useEffect(() => {
+  React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
         const newPosition: Position = {
@@ -125,30 +118,9 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
     };
   }, [isDragging, isResizing, resizeDirection, dragOffset, annotation, dispatch, scale]);
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    dispatch(updateAnnotation({
-      ...annotation,
-      content: e.target.value
-    }));
-  };
-
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     dispatch(deleteAnnotation(annotation.id));
-  };
-
-  // Get the actual font family to use (with fallbacks)
-  const getFontFamilyStyle = () => {
-    switch (annotation.fontFamily) {
-      case 'serif':
-        return 'font-serif';
-      case 'mono':
-        return 'font-mono';
-      case 'cursive':
-        return 'font-["Segoe Script","Brush Script MT",cursive]';
-      default:
-        return 'font-sans';
-    }
   };
 
   return (
@@ -159,24 +131,17 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         top: annotation.position.y * scale,
         width: annotation.size.width * scale,
         height: annotation.size.height * scale,
-        backgroundColor: 'white',
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         borderRadius: '4px',
-        zIndex: isSelected ? 35 : 30
+        zIndex: isSelected ? 35 : 30,
+        cursor: activeTool === 'select' ? 'move' : 'default'
       }}
       onMouseDown={handleMouseDown}
     >
-      <textarea
-        ref={textareaRef}
-        value={annotation.content}
-        onChange={handleContentChange}
-        className={`w-full h-full p-2 resize-none bg-transparent border-none focus:outline-none focus:ring-0 ${getFontFamilyStyle()}`}
-        style={{
-          color: annotation.color,
-          fontSize: `${annotation.fontSize * scale}px`,
-          cursor: 'default' // Change cursor to default (arrow pointer) for text
-        }}
-        onClick={(e) => e.stopPropagation()}
+      <img 
+        src={annotation.url} 
+        alt="Uploaded annotation" 
+        className="w-full h-full object-contain"
       />
       
       {isSelected && activeTool === 'select' && (
@@ -202,4 +167,4 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
   );
 };
 
-export default TextAnnotation;
+export default ImageAnnotation;

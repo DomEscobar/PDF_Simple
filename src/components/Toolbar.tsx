@@ -9,7 +9,8 @@ import {
   redo,
   clearAnnotations,
   createSignatureAnnotation,
-  updateAnnotation
+  updateAnnotation,
+  createImageAnnotation
 } from '@/store/slices/annotationSlice';
 import {
   loadPDF,
@@ -32,7 +33,8 @@ import {
   Trash,
   Type,
   Palette,
-  AlignLeft
+  AlignLeft,
+  Image
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Position, FontFamily, TextAnnotation } from '@/types';
@@ -42,6 +44,7 @@ const Toolbar: React.FC = () => {
   const { activeTool, selectedColor, lineThickness, history, selectedAnnotationId } = useAppSelector(state => state.annotation);
   const { currentPage } = useAppSelector(state => state.pdf);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showLineThickness, setShowLineThickness] = useState(false);
   const [isSignatureMode, setIsSignatureMode] = useState(false);
@@ -74,12 +77,12 @@ const Toolbar: React.FC = () => {
     { value: 'cursive', label: 'Cursive' },
   ];
 
-  // Font size options
+  // Font size options with "px" added
   const fontSizeOptions = [
-    { value: 12, label: 'Small' },
-    { value: 16, label: 'Medium' },
-    { value: 20, label: 'Large' },
-    { value: 24, label: 'X-Large' },
+    { value: 12, label: '12px' },
+    { value: 16, label: '16px' },
+    { value: 20, label: '20px' },
+    { value: 24, label: '24px' },
   ];
 
   // Line thickness options
@@ -138,6 +141,45 @@ const Toolbar: React.FC = () => {
     // Reset the file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
+    }
+  };
+
+  // Handle image upload
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check if file is an image
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file');
+      return;
+    }
+
+    // Create an image URL and add it to the annotations
+    const imageUrl = URL.createObjectURL(file);
+    
+    // Load the image to get its dimensions
+    const img = new Image();
+    img.onload = () => {
+      const aspectRatio = img.width / img.height;
+      const width = Math.min(300, img.width);
+      const height = width / aspectRatio;
+      
+      // Create an image annotation at the center of the viewport
+      dispatch(createImageAnnotation({
+        position: { x: 100, y: 100 },
+        size: { width, height },
+        url: imageUrl,
+        pageNumber: currentPage
+      }));
+      
+      toast.success('Image added to document');
+    };
+    img.src = imageUrl;
+
+    // Reset the image input
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
     }
   };
 
@@ -484,6 +526,22 @@ const Toolbar: React.FC = () => {
             icon={<Signature size={18} />}
             tooltip="Add Signature"
           />
+          
+          {/* Image Upload Button */}
+          <div>
+            <input
+              type="file"
+              ref={imageInputRef}
+              onChange={handleImageUpload}
+              accept="image/*"
+              className="hidden"
+            />
+            <ActionButton
+              onClick={() => imageInputRef.current?.click()}
+              icon={<Image size={18} />}
+              tooltip="Upload Image"
+            />
+          </div>
         </div>
         
         {/* History controls */}

@@ -52,7 +52,17 @@ export type SignatureAnnotation = {
   pageNumber: number;
 };
 
-export type Annotation = TextAnnotation | DrawingAnnotation | SignatureAnnotation;
+export type ImageAnnotation = {
+  id: string;
+  type: 'image';
+  url: string;
+  position: Position;
+  size: Size;
+  createdAt: number;
+  pageNumber: number;
+};
+
+export type Annotation = TextAnnotation | DrawingAnnotation | SignatureAnnotation | ImageAnnotation;
 
 export type EditorHistory = {
   past: Annotation[][];

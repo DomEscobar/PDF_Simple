@@ -1,7 +1,6 @@
-
 import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
-import { Position, Color, LineThickness, Annotation, EditorHistory, TextAnnotation, DrawingAnnotation, SignatureAnnotation, FontFamily } from '@/types';
+import { Position, Color, LineThickness, Annotation, EditorHistory, TextAnnotation, DrawingAnnotation, SignatureAnnotation, FontFamily, ImageAnnotation } from '@/types';
 
 // Define the initial state
 interface AnnotationState {
@@ -75,6 +74,14 @@ export const createSignatureAnnotation = createAction<{
   path: Position[];
   pageNumber: number;
 }>('annotation/createSignatureAnnotation');
+
+// Action to create image annotation
+export const createImageAnnotation = createAction<{
+  position: Position;
+  size: { width: number; height: number };
+  url: string;
+  pageNumber: number;
+}>('annotation/createImageAnnotation');
 
 // Fix the createTextAnnotation action to include pageNumber
 export const createTextAnnotation = createAction<{
@@ -282,6 +289,33 @@ const annotationSlice = createSlice({
           position,
           size,
           path,
+          createdAt: Date.now(),
+          pageNumber: pageNumber,
+        };
+        
+        // Add to history
+        const newHistory = [...state.history.present, newAnnotation];
+        return {
+          ...state,
+          history: {
+            past: [...state.history.past, state.history.present],
+            present: newHistory,
+            future: [],
+          },
+          selectedAnnotationId: newAnnotation.id,
+        };
+      })
+      
+      // Handle image annotation creation
+      .addCase(createImageAnnotation, (state, action) => {
+        const { position, size, url, pageNumber } = action.payload;
+        
+        const newAnnotation: ImageAnnotation = {
+          id: uuidv4(),
+          type: 'image',
+          url,
+          position,
+          size,
           createdAt: Date.now(),
           pageNumber: pageNumber,
         };

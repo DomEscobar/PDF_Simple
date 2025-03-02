@@ -1,41 +1,76 @@
-
 import React from 'react';
-import { Annotation } from '@/types';
+import { useAppSelector } from '@/store';
 import TextAnnotation from './TextAnnotation';
+import DrawingCanvas from './DrawingCanvas';
 import SignatureBox from './SignatureBox';
+import ImageAnnotation from './ImageAnnotation';
 
-interface PDFAnnotationsLayerProps {
-  history: Annotation[];
-  selectedAnnotationId: string | null;
-}
+const PDFAnnotationsLayer: React.FC = () => {
+  const { annotations, selectedAnnotationId } = useAppSelector(state => state.annotation.history);
+  const { currentPage, scale } = useAppSelector(state => state.pdf);
+  const { activeTool } = useAppSelector(state => state.annotation);
 
-const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({ 
-  history, 
-  selectedAnnotationId 
-}) => {
+  const handleClick = () => {
+    if (activeTool === 'text') {
+      document.body.style.cursor = 'text';
+    } else {
+      document.body.style.cursor = 'default';
+    }
+  };
+
+  // Filter annotations to only show those for the current page
+  const currentPageAnnotations = annotations.filter(
+    annotation => annotation.pageNumber === currentPage
+  );
+
   return (
-    <div className="absolute inset-0 z-30 pointer-events-none">
-      {history.map((annotation: Annotation) => {
-        if (annotation.type === 'drawing') return null; // Drawing annotations are handled by DrawingCanvas
-        
-        // Each annotation gets pointer-events-auto to be interactive
-        return (
-          <div key={annotation.id} className="pointer-events-auto">
-            {annotation.type === 'text' && (
+    <div
+      className="absolute inset-0"
+      style={{ transform: `scale(${scale})`, transformOrigin: 'top left', pointerEvents: 'none' }}
+    >
+      <div className="relative w-full h-full" style={{ pointerEvents: 'all' }} onClick={handleClick}>
+        {/* Render all annotations for current page */}
+        {currentPageAnnotations.map((annotation) => {
+          // Check if annotation is selected
+          const isSelected = selectedAnnotationId === annotation.id;
+          
+          if (annotation.type === 'text') {
+            return (
               <TextAnnotation
+                key={annotation.id}
                 annotation={annotation}
-                isSelected={selectedAnnotationId === annotation.id}
+                isSelected={isSelected}
               />
-            )}
-            {annotation.type === 'signature' && (
+            );
+          } else if (annotation.type === 'drawing') {
+            return (
+              <DrawingCanvas
+                key={annotation.id}
+                annotation={annotation}
+                isSelected={isSelected}
+              />
+            );
+          } else if (annotation.type === 'signature') {
+            return (
               <SignatureBox
+                key={annotation.id}
                 annotation={annotation}
-                isSelected={selectedAnnotationId === annotation.id}
+                isSelected={isSelected}
               />
-            )}
-          </div>
-        );
-      })}
+            );
+          } else if (annotation.type === 'image') {
+            return (
+              <ImageAnnotation
+                key={annotation.id}
+                annotation={annotation}
+                isSelected={isSelected}
+              />
+            );
+          }
+          
+          return null;
+        })}
+      </div>
     </div>
   );
 };
