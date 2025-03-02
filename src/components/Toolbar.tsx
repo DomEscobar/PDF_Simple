@@ -142,7 +142,7 @@ const Toolbar: React.FC = () => {
 
     const imageUrl = URL.createObjectURL(file);
     
-    const img = new Image();
+    const img = new window.Image();
     img.onload = () => {
       const aspectRatio = img.width / img.height;
       const width = Math.min(300, img.width);
