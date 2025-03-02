@@ -58,6 +58,7 @@ export const handleTextFocus = (e: Event) => {
   // Copy the computed styles and position of the original element
   const styles = window.getComputedStyle(element);
   editorDiv.style.width = styles.width;
+    editorDiv.style.minWidth = styles.minWidth;
   editorDiv.style.height = styles.height;
   editorDiv.style.left = styles.left;
   editorDiv.style.top = styles.top;
