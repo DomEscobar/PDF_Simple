@@ -174,7 +174,8 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         width: annotation.size.width * scale,
         height: annotation.size.height * scale,
         zIndex: isSelected ? 100 : 10,
-        transition: 'none'
+        transition: 'none',
+        animation: 'none'
       }}
       onMouseDown={handleMouseDown}
     >
@@ -187,9 +188,12 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
           color: annotation.color,
           fontSize: `${annotation.fontSize * scale}px`,
           cursor: activeTool === 'select' ? 'move' : 'default',
-          transition: 'none'
+          transition: 'none',
+          animation: 'none'
         }}
         onClick={(e) => e.stopPropagation()}
+        autoFocus={isSelected}
+        spellCheck={false}
       />
       
       {/* Resize handles (only visible when selected) */}

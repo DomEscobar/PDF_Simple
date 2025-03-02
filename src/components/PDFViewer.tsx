@@ -23,6 +23,7 @@ const PDFViewer: React.FC = () => {
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<Error | null>(null);
+  const [pdfDocument, setPdfDocument] = useState<any>(null);
 
   // Handle PDF click for adding annotations
   const handlePDFClick = (e: React.MouseEvent) => {
@@ -37,6 +38,33 @@ const PDFViewer: React.FC = () => {
 
     // Create appropriate annotation based on active tool
     if (activeTool === 'text') {
+      // Check if clicking on a form field
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('textLayer')) {
+        // Try to detect if we're clicking on a form field area
+        // This is a simple heuristic - in a real app, you'd use PDF.js to detect form fields
+        const textElements = target.querySelectorAll('span');
+        for (const element of textElements) {
+          const rect = element.getBoundingClientRect();
+          const elementX = (e.clientX - rect.left) / scale;
+          const elementY = (e.clientY - rect.top) / scale;
+          
+          if (elementX >= 0 && elementX <= rect.width && 
+              elementY >= 0 && elementY <= rect.height) {
+            // We've found a text element under the cursor
+            // Create a text annotation positioned at this element
+            dispatch(createTextAnnotation({ 
+              position: {
+                x: (rect.left - containerRef.current.getBoundingClientRect().left) / scale,
+                y: (rect.top - containerRef.current.getBoundingClientRect().top) / scale
+              }
+            }));
+            return;
+          }
+        }
+      }
+      
+      // Default behavior if not clicking on a text element
       dispatch(createTextAnnotation({ position }));
     } else if (activeTool === 'draw') {
       dispatch(setIsDrawing(true));
@@ -65,7 +93,37 @@ const PDFViewer: React.FC = () => {
       width: viewport.width * scale,
       height: viewport.height * scale,
     });
+    
+    // Store reference to PDF document for form field detection
+    setPdfDocument(page);
   };
+
+  // Function to create editable annotations for PDF form fields
+  useEffect(() => {
+    if (pdfDocument && url) {
+      // In a real implementation, you would use PDF.js API to get form fields
+      // This is a placeholder for that functionality
+      const detectFormFields = async () => {
+        try {
+          // This would be replaced with actual PDF.js form field detection
+          // For now, we're just simulating the behavior
+          
+          // You'd typically access form fields like this:
+          // const annotations = await pdfDocument.getAnnotations();
+          // const formFields = annotations.filter(a => a.subtype === 'Widget');
+          
+          // For demonstration purposes, we're not actually implementing this
+          // as it would require deeper PDF.js integration
+          
+          console.log('PDF document loaded and ready for form field detection');
+        } catch (error) {
+          console.error('Error detecting form fields:', error);
+        }
+      };
+      
+      detectFormFields();
+    }
+  }, [pdfDocument, url, currentPage]);
 
   // Render annotations
   const renderAnnotations = () => {
