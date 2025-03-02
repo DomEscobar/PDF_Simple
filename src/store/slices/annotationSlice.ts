@@ -105,11 +105,7 @@ const annotationSlice = createSlice({
       // Clear future
       state.history.future = [];
     },
-    createTextAnnotation: (state, action: PayloadAction<{ 
-      position: Position;
-      size?: Size;
-      content?: string;
-    }>) => {
+    createTextAnnotation: (state, action: PayloadAction<{ position: Position }>) => {
       // Save current state to past
       state.history.past.push([...state.history.present]);
       
@@ -117,9 +113,9 @@ const annotationSlice = createSlice({
       const newTextAnnotation: TextAnnotation = {
         id: `text-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         type: 'text',
-        content: action.payload.content || 'Add text here',
+        content: 'Add text here',
         position: action.payload.position,
-        size: action.payload.size || { width: 200, height: 100 },
+        size: { width: 200, height: 100 },
         color: state.selectedColor,
         fontSize: 16,
         createdAt: Date.now(),
