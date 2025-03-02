@@ -9,6 +9,7 @@ import {
   redo,
   clearAnnotations,
   createSignatureAnnotation,
+  updateAnnotation
 } from '@/store/slices/annotationSlice';
 import {
   loadPDF,
@@ -29,13 +30,16 @@ import {
   ZoomOut,
   FileText,
   Trash,
+  Type,
+  Palette,
+  AlignLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Position } from '@/types';
+import { Position, FontFamily } from '@/types';
 
 const Toolbar: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { activeTool, selectedColor, lineThickness, history } = useAppSelector(state => state.annotation);
+  const { activeTool, selectedColor, lineThickness, history, selectedAnnotationId } = useAppSelector(state => state.annotation);
   const { currentPage } = useAppSelector(state => state.pdf);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -44,6 +48,10 @@ const Toolbar: React.FC = () => {
   const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawingSignature, setIsDrawingSignature] = useState(false);
   const [signaturePath, setSignaturePath] = useState<Position[]>([]);
+  const [showFontOptions, setShowFontOptions] = useState(false);
+
+  const selectedTextAnnotation = selectedAnnotationId ? 
+    history.present.find(ann => ann.id === selectedAnnotationId && ann.type === 'text') : null;
 
   // Color options
   const colorOptions = [
@@ -55,12 +63,58 @@ const Toolbar: React.FC = () => {
     '#000000', // black
   ];
 
+  // Font family options
+  const fontFamilyOptions = [
+    { value: 'sans', label: 'Sans' },
+    { value: 'serif', label: 'Serif' },
+    { value: 'mono', label: 'Mono' },
+    { value: 'cursive', label: 'Cursive' },
+  ];
+
+  // Font size options
+  const fontSizeOptions = [
+    { value: 12, label: 'Small' },
+    { value: 16, label: 'Medium' },
+    { value: 20, label: 'Large' },
+    { value: 24, label: 'X-Large' },
+  ];
+
   // Line thickness options
   const thicknessOptions = [
     { value: 'thin', label: 'Thin' },
     { value: 'medium', label: 'Medium' },
     { value: 'thick', label: 'Thick' },
   ];
+
+  // Handle changing font family for selected text annotation
+  const handleFontFamilyChange = (fontFamily: FontFamily) => {
+    if (selectedTextAnnotation) {
+      dispatch(updateAnnotation({
+        ...selectedTextAnnotation,
+        fontFamily
+      }));
+    }
+  };
+
+  // Handle changing font size for selected text annotation
+  const handleFontSizeChange = (fontSize: number) => {
+    if (selectedTextAnnotation) {
+      dispatch(updateAnnotation({
+        ...selectedTextAnnotation,
+        fontSize
+      }));
+    }
+  };
+
+  // Handle changing text color for selected text annotation
+  const handleTextColorChange = (color: string) => {
+    if (selectedTextAnnotation) {
+      dispatch(updateAnnotation({
+        ...selectedTextAnnotation,
+        color
+      }));
+    }
+  };
 
   // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -231,6 +285,74 @@ const Toolbar: React.FC = () => {
     );
   };
 
+  // Render text annotation options sub-toolbar
+  const renderTextAnnotationOptions = () => {
+    // Only show if a text annotation is selected
+    if (!selectedTextAnnotation || activeTool !== 'select') return null;
+    
+    return (
+      <div className="bg-white text-gray-800 py-2 px-4 border-b border-editor-border flex items-center gap-4 shadow-sm animate-slide-up">
+        {/* Font Family */}
+        <div className="relative">
+          <ActionButton
+            onClick={() => setShowFontOptions(!showFontOptions)}
+            icon={<Type size={18} />}
+            tooltip="Font Family"
+          />
+          
+          {showFontOptions && (
+            <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-lg border border-editor-border w-32 z-20 animate-scale-in">
+              {fontFamilyOptions.map(font => (
+                <div
+                  key={font.value}
+                  className={`px-3 py-2 cursor-pointer hover:bg-gray-100 rounded ${
+                    selectedTextAnnotation.fontFamily === font.value ? 'bg-primary/10 text-primary' : ''
+                  }`}
+                  onClick={() => handleFontFamilyChange(font.value as FontFamily)}
+                >
+                  <span className={`font-${font.value}`}>{font.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* Font Size */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Size:</span>
+          <select
+            value={selectedTextAnnotation.fontSize || 16}
+            onChange={(e) => handleFontSizeChange(Number(e.target.value))}
+            className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
+          >
+            {fontSizeOptions.map(size => (
+              <option key={size.value} value={size.value}>
+                {size.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Font Color */}
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-500">Color:</span>
+          <div className="flex gap-1">
+            {colorOptions.map(color => (
+              <div
+                key={color}
+                className={`w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform ${
+                  selectedTextAnnotation.color === color ? 'ring-2 ring-offset-1 ring-primary' : ''
+                }`}
+                style={{ backgroundColor: color }}
+                onClick={() => handleTextColorChange(color)}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       {/* Main toolbar */}
@@ -283,6 +405,7 @@ const Toolbar: React.FC = () => {
               dispatch(setActiveTool('text'));
               setShowColorPicker(false);
               setShowLineThickness(false);
+              setShowFontOptions(false);
             }}
             icon={<FileText size={18} />}
             active={activeTool === 'text'}
@@ -294,6 +417,7 @@ const Toolbar: React.FC = () => {
                 dispatch(setActiveTool('draw'));
                 setShowColorPicker(!showColorPicker);
                 setShowLineThickness(false);
+                setShowFontOptions(false);
               }}
               icon={<Pen size={18} />}
               active={activeTool === 'draw'}
@@ -319,6 +443,7 @@ const Toolbar: React.FC = () => {
               onClick={() => {
                 setShowLineThickness(!showLineThickness);
                 setShowColorPicker(false);
+                setShowFontOptions(false);
               }}
               icon={<Highlighter size={18} />}
               active={showLineThickness}
@@ -351,6 +476,7 @@ const Toolbar: React.FC = () => {
               setIsSignatureMode(true);
               setShowColorPicker(false);
               setShowLineThickness(false);
+              setShowFontOptions(false);
             }}
             icon={<Signature size={18} />}
             tooltip="Add Signature"
@@ -360,13 +486,13 @@ const Toolbar: React.FC = () => {
         {/* History controls */}
         <div className="flex items-center gap-2">
           <ActionButton
-            onClick={() => dispatch(undo(null))} // Pass null as payload
+            onClick={() => dispatch(undo())}
             icon={<Undo2 size={18} />}
             tooltip="Undo"
             className={history.past.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
           />
           <ActionButton
-            onClick={() => dispatch(redo(null))} // Pass null as payload
+            onClick={() => dispatch(redo())}
             icon={<Redo2 size={18} />}
             tooltip="Redo"
             className={history.future.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
@@ -374,7 +500,7 @@ const Toolbar: React.FC = () => {
           <ActionButton
             onClick={() => {
               if (window.confirm('Are you sure you want to clear all annotations?')) {
-                dispatch(clearAnnotations(null)); // Pass null as payload
+                dispatch(clearAnnotations());
               }
             }}
             icon={<Trash size={18} />}
@@ -382,6 +508,9 @@ const Toolbar: React.FC = () => {
           />
         </div>
       </div>
+      
+      {/* Text annotation options sub-toolbar */}
+      {renderTextAnnotationOptions()}
       
       {/* Signature modal */}
       {renderSignatureModal()}

@@ -1,7 +1,7 @@
 
 import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
-import { Position, Color, LineThickness, Annotation, EditorHistory, TextAnnotation, DrawingAnnotation, SignatureAnnotation } from '@/types';
+import { Position, Color, LineThickness, Annotation, EditorHistory, TextAnnotation, DrawingAnnotation, SignatureAnnotation, FontFamily } from '@/types';
 
 // Define the initial state
 interface AnnotationState {
@@ -81,6 +81,7 @@ export const createTextAnnotation = createAction<{
   position: Position;
   content?: string;
   pageNumber: number;
+  fontFamily?: FontFamily;
 }>('annotation/createTextAnnotation');
 
 const annotationSlice = createSlice({
@@ -241,7 +242,7 @@ const annotationSlice = createSlice({
       // Handle text annotation creation
       .addCase(createTextAnnotation, (state, action) => {
         // Get pageNumber from payload instead of store.getState()
-        const { position, content = 'Text annotation', pageNumber } = action.payload;
+        const { position, content = 'Text annotation', pageNumber, fontFamily = 'sans' } = action.payload;
         
         const newAnnotation: TextAnnotation = {
           id: uuidv4(),
@@ -251,6 +252,7 @@ const annotationSlice = createSlice({
           size: { width: 200, height: 100 },
           color: state.selectedColor,
           fontSize: 16,
+          fontFamily,
           createdAt: Date.now(),
           pageNumber: pageNumber,
         };

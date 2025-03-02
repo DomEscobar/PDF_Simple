@@ -137,6 +137,20 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
     dispatch(deleteAnnotation(annotation.id));
   };
 
+  // Get the actual font family to use (with fallbacks)
+  const getFontFamilyStyle = () => {
+    switch (annotation.fontFamily) {
+      case 'serif':
+        return 'font-serif';
+      case 'mono':
+        return 'font-mono';
+      case 'cursive':
+        return 'font-["Segoe Script","Brush Script MT",cursive]';
+      default:
+        return 'font-sans';
+    }
+  };
+
   return (
     <div
       className={`absolute ${isSelected ? 'ring-2 ring-primary' : 'border border-gray-200'}`}
@@ -156,7 +170,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         ref={textareaRef}
         value={annotation.content}
         onChange={handleContentChange}
-        className="w-full h-full p-2 resize-none bg-transparent border-none focus:outline-none focus:ring-0"
+        className={`w-full h-full p-2 resize-none bg-transparent border-none focus:outline-none focus:ring-0 ${getFontFamilyStyle()}`}
         style={{
           color: annotation.color,
           fontSize: `${annotation.fontSize * scale}px`,

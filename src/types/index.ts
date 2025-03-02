@@ -15,6 +15,8 @@ export type ToolType = 'select' | 'text' | 'draw' | 'signature' | 'eraser';
 
 export type LineThickness = 'thin' | 'medium' | 'thick';
 
+export type FontFamily = 'sans' | 'serif' | 'mono' | 'cursive';
+
 export type TextAnnotation = {
   id: string;
   type: 'text';
@@ -23,6 +25,7 @@ export type TextAnnotation = {
   size: Size;
   color: Color;
   fontSize: number;
+  fontFamily?: FontFamily;
   createdAt: number;
   pageNumber: number;
 };
