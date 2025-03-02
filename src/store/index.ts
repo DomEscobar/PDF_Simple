@@ -1,7 +1,7 @@
 
 import { configureStore } from '@reduxjs/toolkit';
 import { pdfReducer } from './slices/pdfSlice';
-import { annotationReducer } from './slices/annotationSlice';
+import annotationReducer from './slices/annotationSlice';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 
 export const store = configureStore({

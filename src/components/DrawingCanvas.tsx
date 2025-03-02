@@ -1,7 +1,6 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { addDrawingPath, createDrawingAnnotation, finalizeDrawing, getThicknessValue } from '@/store/slices/annotationSlice';
+import { finishDrawing, addPointToPath, setIsDrawing } from '@/store/slices/annotationSlice';
 import { Position } from '@/types';
 
 type DrawingCanvasProps = {
@@ -15,7 +14,6 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
   const { scale } = useAppSelector(state => state.pdf);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [currentPath, setCurrentPath] = useState<Position[]>([]);
-  const [drawingId, setDrawingId] = useState<string | null>(null);
   
   // Setup canvas size and context when dimensions change
   useEffect(() => {
@@ -33,9 +31,8 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
   
   // Clear canvas and reset drawing state when tool changes
   useEffect(() => {
-    if (activeTool !== 'draw' && drawingId) {
-      dispatch(finalizeDrawing(null)); // Pass null as payload
-      setDrawingId(null);
+    if (activeTool !== 'draw' && isDrawing) {
+      dispatch(finishDrawing());
       setCurrentPath([]);
     }
     
@@ -46,17 +43,18 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
     if (ctx) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-  }, [activeTool, dispatch]);
+  }, [activeTool, dispatch, isDrawing]);
+  
+  // Get thickness value based on lineThickness setting
+  const getThicknessValue = (thickness: string): number => {
+    return thickness === 'thin' ? 2 : thickness === 'medium' ? 5 : 8;
+  };
   
   // Setup drawing handlers
   const handleDrawStart = (e: React.MouseEvent) => {
     if (activeTool !== 'draw') return;
     
-    // Create a new drawing annotation if needed
-    if (!drawingId) {
-      const id = dispatch(createDrawingAnnotation(null)).payload; // Pass null as payload
-      setDrawingId(id);
-    }
+    dispatch(setIsDrawing(true));
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -82,7 +80,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
   };
   
   const handleDrawMove = (e: React.MouseEvent) => {
-    if (activeTool !== 'draw' || currentPath.length === 0 || !drawingId) return;
+    if (activeTool !== 'draw' || currentPath.length === 0 || !isDrawing) return;
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -95,6 +93,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
     
     // Add point to current path
     setCurrentPath(prevPath => [...prevPath, newPoint]);
+    dispatch(addPointToPath(newPoint));
     
     // Draw on canvas
     const ctx = canvas.getContext('2d');
@@ -105,15 +104,10 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
   };
   
   const handleDrawEnd = () => {
-    if (activeTool !== 'draw' || currentPath.length === 0 || !drawingId) return;
+    if (activeTool !== 'draw' || currentPath.length === 0 || !isDrawing) return;
     
-    // Add drawing path to the annotation
-    dispatch(addDrawingPath({
-      id: drawingId,
-      points: [...currentPath],
-      color: selectedColor,
-      thickness: getThicknessValue(lineThickness),
-    }));
+    // Finish drawing
+    dispatch(finishDrawing());
     
     // Reset current path
     setCurrentPath([]);
@@ -148,8 +142,8 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
     history.present
       .filter(ann => ann.type === 'drawing')
       .forEach(annotation => {
-        const drawing = annotation;
-        drawing.paths.forEach(path => {
+        const drawing = annotation as any;  // Using type assertion here
+        drawing.paths.forEach((path: any) => {
           if (path.points.length < 2) return;
           
           ctx.beginPath();

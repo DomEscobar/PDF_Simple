@@ -1,7 +1,6 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { deleteAnnotation, setSelectedAnnotation, updateSignaturePosition } from '@/store/slices/annotationSlice';
+import { deleteAnnotation, setSelectedAnnotationId, updateAnnotation } from '@/store/slices/annotationSlice';
 import { SignatureAnnotation as SignatureAnnotationType, Position } from '@/types';
 import { X } from 'lucide-react';
 
@@ -18,7 +17,6 @@ const SignatureBox: React.FC<SignatureBoxProps> = ({ annotation, isSelected }) =
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Draw signature on canvas
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -29,10 +27,8 @@ const SignatureBox: React.FC<SignatureBoxProps> = ({ annotation, isSelected }) =
     canvas.width = annotation.size.width * scale;
     canvas.height = annotation.size.height * scale;
     
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Draw the signature path
     if (annotation.path.length < 2) return;
     
     ctx.beginPath();
@@ -49,14 +45,12 @@ const SignatureBox: React.FC<SignatureBoxProps> = ({ annotation, isSelected }) =
     ctx.stroke();
   }, [annotation, scale]);
 
-  // Handle mouse down for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
     if (activeTool !== 'select') return;
     
     e.stopPropagation();
-    dispatch(setSelectedAnnotation(annotation.id));
+    dispatch(setSelectedAnnotationId(annotation.id));
     
-    // Start dragging
     setIsDragging(true);
     setDragOffset({
       x: e.clientX - (annotation.position.x * scale),
@@ -64,19 +58,17 @@ const SignatureBox: React.FC<SignatureBoxProps> = ({ annotation, isSelected }) =
     });
   };
 
-  // Handle mouse move for dragging
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!isDragging) return;
       
-      // Update position while dragging
       const newPosition: Position = {
         x: (e.clientX - dragOffset.x) / scale,
         y: (e.clientY - dragOffset.y) / scale
       };
       
-      dispatch(updateSignaturePosition({
-        id: annotation.id,
+      dispatch(updateAnnotation({
+        ...annotation,
         position: newPosition
       }));
     };
@@ -96,7 +88,6 @@ const SignatureBox: React.FC<SignatureBoxProps> = ({ annotation, isSelected }) =
     };
   }, [isDragging, dragOffset, annotation, dispatch, scale]);
 
-  // Handle delete
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     dispatch(deleteAnnotation(annotation.id));
@@ -122,7 +113,6 @@ const SignatureBox: React.FC<SignatureBoxProps> = ({ annotation, isSelected }) =
         className="w-full h-full"
       />
       
-      {/* Delete button (visible when selected) */}
       {isSelected && activeTool === 'select' && (
         <button
           className="absolute -top-3 -right-3 bg-destructive text-white rounded-full p-1 opacity-80 hover:opacity-100 transition-opacity"

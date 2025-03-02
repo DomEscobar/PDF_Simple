@@ -1,7 +1,6 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
-import { deleteAnnotation, setSelectedAnnotation, updateTextAnnotation } from '@/store/slices/annotationSlice';
+import { deleteAnnotation, setSelectedAnnotationId, updateAnnotation } from '@/store/slices/annotationSlice';
 import { TextAnnotation as TextAnnotationType, Position, Size } from '@/types';
 import { X } from 'lucide-react';
 
@@ -20,21 +19,18 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Focus textarea when selected
   useEffect(() => {
     if (isSelected && textareaRef.current) {
       textareaRef.current.focus();
     }
   }, [isSelected]);
 
-  // Mouse down handler for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
     if (activeTool !== 'select') return;
     
     e.stopPropagation();
-    dispatch(setSelectedAnnotation(annotation.id));
+    dispatch(setSelectedAnnotationId(annotation.id));
 
-    // Start dragging
     setIsDragging(true);
     setDragOffset({
       x: e.clientX - (annotation.position.x * scale),
@@ -42,7 +38,6 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
     });
   };
 
-  // Mouse down handler for resize handles
   const handleResizeStart = (e: React.MouseEvent, direction: string) => {
     if (activeTool !== 'select') return;
     
@@ -55,36 +50,32 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
     });
   };
 
-  // Mouse move handler for dragging and resizing
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (isDragging) {
-        // Update position while dragging
         const newPosition: Position = {
           x: (e.clientX - dragOffset.x) / scale,
           y: (e.clientY - dragOffset.y) / scale
         };
         
-        dispatch(updateTextAnnotation({
-          id: annotation.id,
+        dispatch(updateAnnotation({
+          ...annotation,
           position: newPosition
         }));
       } else if (isResizing && resizeDirection) {
         e.preventDefault();
         
-        // Calculate deltas
         const deltaX = e.clientX - dragOffset.x;
         const deltaY = e.clientY - dragOffset.y;
         
-        // Update size based on resize direction
         let newSize: Size = { ...annotation.size };
         
         switch (resizeDirection) {
           case 'ne':
             newSize.width = Math.max(50, annotation.size.width + (deltaX / scale));
             newSize.height = Math.max(30, annotation.size.height - (deltaY / scale));
-            dispatch(updateTextAnnotation({
-              id: annotation.id,
+            dispatch(updateAnnotation({
+              ...annotation,
               size: newSize,
               position: {
                 x: annotation.position.x,
@@ -95,16 +86,16 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
           case 'se':
             newSize.width = Math.max(50, annotation.size.width + (deltaX / scale));
             newSize.height = Math.max(30, annotation.size.height + (deltaY / scale));
-            dispatch(updateTextAnnotation({
-              id: annotation.id,
+            dispatch(updateAnnotation({
+              ...annotation,
               size: newSize
             }));
             break;
           case 'sw':
             newSize.width = Math.max(50, annotation.size.width - (deltaX / scale));
             newSize.height = Math.max(30, annotation.size.height + (deltaY / scale));
-            dispatch(updateTextAnnotation({
-              id: annotation.id,
+            dispatch(updateAnnotation({
+              ...annotation,
               size: newSize,
               position: {
                 x: annotation.position.x + (deltaX / scale),
@@ -115,8 +106,8 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
           case 'nw':
             newSize.width = Math.max(50, annotation.size.width - (deltaX / scale));
             newSize.height = Math.max(30, annotation.size.height - (deltaY / scale));
-            dispatch(updateTextAnnotation({
-              id: annotation.id,
+            dispatch(updateAnnotation({
+              ...annotation,
               size: newSize,
               position: {
                 x: annotation.position.x + (deltaX / scale),
@@ -126,7 +117,6 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
             break;
         }
         
-        // Update drag offset for next move event
         setDragOffset({
           x: e.clientX,
           y: e.clientY
@@ -151,15 +141,13 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
     };
   }, [isDragging, isResizing, resizeDirection, dragOffset, annotation, dispatch, scale]);
 
-  // Handle content change
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    dispatch(updateTextAnnotation({
-      id: annotation.id,
+    dispatch(updateAnnotation({
+      ...annotation,
       content: e.target.value
     }));
   };
 
-  // Handle annotation delete
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     dispatch(deleteAnnotation(annotation.id));
@@ -192,7 +180,6 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         onClick={(e) => e.stopPropagation()}
       />
       
-      {/* Resize handles (only visible when selected) */}
       {isSelected && activeTool === 'select' && (
         <>
           <div className="annotation-handle top-0 left-0 cursor-nw-resize" 
@@ -204,7 +191,6 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
           <div className="annotation-handle bottom-0 right-0 cursor-se-resize" 
                onMouseDown={(e) => handleResizeStart(e, 'se')} />
           
-          {/* Delete button */}
           <button
             className="absolute -top-3 -right-3 bg-destructive text-white rounded-full p-1 opacity-80 hover:opacity-100 transition-opacity"
             onClick={handleDelete}

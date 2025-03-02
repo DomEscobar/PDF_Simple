@@ -81,8 +81,6 @@ export const createTextAnnotation = createAction<{
   content?: string;
 }>('annotation/createTextAnnotation');
 
-// Fix the other annotation creation actions as needed
-
 const annotationSlice = createSlice({
   name: 'annotation',
   initialState,
