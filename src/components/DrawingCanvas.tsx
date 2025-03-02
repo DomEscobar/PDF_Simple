@@ -33,7 +33,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
   // Clear canvas and reset drawing state when tool changes
   useEffect(() => {
     if (activeTool !== 'draw' && drawingId) {
-      dispatch(finalizeDrawing());
+      dispatch(finalizeDrawing(null)); // Pass null as payload
       setDrawingId(null);
       setCurrentPath([]);
     }
@@ -53,7 +53,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
     
     // Create a new drawing annotation if needed
     if (!drawingId) {
-      const id = dispatch(createDrawingAnnotation()).payload;
+      const id = dispatch(createDrawingAnnotation(null)).payload; // Pass null as payload
       setDrawingId(id);
     }
     

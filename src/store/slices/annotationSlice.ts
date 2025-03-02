@@ -1,4 +1,3 @@
-
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { 
   Annotation, 
@@ -106,30 +105,6 @@ const annotationSlice = createSlice({
       // Clear future
       state.history.future = [];
     },
-    undo: (state) => {
-      if (state.history.past.length > 0) {
-        // Move current state to future
-        state.history.future.unshift([...state.history.present]);
-        
-        // Set present to the last item in past
-        state.history.present = state.history.past.pop() || [];
-        
-        // Clear selection
-        state.selectedAnnotationId = null;
-      }
-    },
-    redo: (state) => {
-      if (state.history.future.length > 0) {
-        // Move current state to past
-        state.history.past.push([...state.history.present]);
-        
-        // Set present to the first item in future
-        state.history.present = state.history.future.shift() || [];
-        
-        // Clear selection
-        state.selectedAnnotationId = null;
-      }
-    },
     createTextAnnotation: (state, action: PayloadAction<{ position: Position }>) => {
       // Save current state to past
       state.history.past.push([...state.history.present]);
@@ -234,22 +209,26 @@ const annotationSlice = createSlice({
       // Clear future
       state.history.future = [];
     },
-    createDrawingAnnotation: (state) => {
-      // Create drawing annotation
-      const newDrawing: DrawingAnnotation = {
-        id: `drawing-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        type: 'drawing',
-        paths: [],
-        createdAt: Date.now(),
-      };
-      
-      // Add to present
-      state.history.present = [...state.history.present, newDrawing];
-      
-      // Set as selected
-      state.selectedAnnotationId = newDrawing.id;
-      
-      return newDrawing.id;
+    createDrawingAnnotation: {
+      reducer: (state, action: PayloadAction<string>) => {
+        // Create drawing annotation
+        const newDrawing: DrawingAnnotation = {
+          id: action.payload,
+          type: 'drawing',
+          paths: [],
+          createdAt: Date.now(),
+        };
+        
+        // Add to present
+        state.history.present = [...state.history.present, newDrawing];
+        
+        // Set as selected
+        state.selectedAnnotationId = newDrawing.id;
+      },
+      prepare: (_?: any) => {
+        const id = `drawing-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        return { payload: id };
+      }
     },
     addDrawingPath: (state, action: PayloadAction<{
       id: string;
@@ -275,7 +254,7 @@ const annotationSlice = createSlice({
         return ann;
       });
     },
-    finalizeDrawing: (state) => {
+    finalizeDrawing: (state, _: PayloadAction<any>) => {
       // If we're finalizing a drawing and it has paths, save to history
       const currentDrawing = state.history.present.find(
         ann => ann.id === state.selectedAnnotationId && ann.type === 'drawing'
@@ -299,7 +278,7 @@ const annotationSlice = createSlice({
       // Clear selection
       state.selectedAnnotationId = null;
     },
-    clearAnnotations: (state) => {
+    clearAnnotations: (state, _: PayloadAction<any>) => {
       // Save current state to past
       if (state.history.present.length > 0) {
         state.history.past.push([...state.history.present]);
@@ -311,6 +290,30 @@ const annotationSlice = createSlice({
       
       // Clear future
       state.history.future = [];
+    },
+    undo: (state, _: PayloadAction<any>) => {
+      if (state.history.past.length > 0) {
+        // Move current state to future
+        state.history.future.unshift([...state.history.present]);
+        
+        // Set present to the last item in past
+        state.history.present = state.history.past.pop() || [];
+        
+        // Clear selection
+        state.selectedAnnotationId = null;
+      }
+    },
+    redo: (state, _: PayloadAction<any>) => {
+      if (state.history.future.length > 0) {
+        // Move current state to past
+        state.history.past.push([...state.history.present]);
+        
+        // Set present to the first item in future
+        state.history.present = state.history.future.shift() || [];
+        
+        // Clear selection
+        state.selectedAnnotationId = null;
+      }
     },
   },
 });

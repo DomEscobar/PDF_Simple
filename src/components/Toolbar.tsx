@@ -1,3 +1,4 @@
+
 import React, { useCallback, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
@@ -384,13 +385,13 @@ const Toolbar: React.FC = () => {
         {/* History controls */}
         <div className="flex items-center gap-2">
           <ActionButton
-            onClick={() => dispatch(undo())}
+            onClick={() => dispatch(undo(null))} // Pass null as payload
             icon={<Undo2 size={18} />}
             tooltip="Undo"
             className={history.past.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
           />
           <ActionButton
-            onClick={() => dispatch(redo())}
+            onClick={() => dispatch(redo(null))} // Pass null as payload
             icon={<Redo2 size={18} />}
             tooltip="Redo"
             className={history.future.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
@@ -398,7 +399,7 @@ const Toolbar: React.FC = () => {
           <ActionButton
             onClick={() => {
               if (window.confirm('Are you sure you want to clear all annotations?')) {
-                dispatch(clearAnnotations());
+                dispatch(clearAnnotations(null)); // Pass null as payload
               }
             }}
             icon={<Trash size={18} />}
