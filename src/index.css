@@ -169,10 +169,26 @@
   line-height: 1;
 }
 
-.pdf-editable-text:focus {
-  outline: none;
-  background-color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 0 5px rgba(0, 120, 255, 0.5);
+.pdf-editable-text {
+  cursor: text !important;
+  transition: background-color 0.2s, color 0.2s !important;
+  border-radius: 2px !important;
+  padding: 1px !important;
+  min-width: 1em !important;
+}
+
+.pdf-editable-text:hover {
+  background-color: rgba(255, 255, 0, 0.2) !important;
+  outline: 1px dashed rgba(0, 0, 0, 0.3) !important;
+}
+
+.pdf-text-editing {
+  background-color: white !important;
+  color: black !important;
+  outline: 2px solid rgba(0, 120, 255, 0.7) !important;
+  box-shadow: 0 0 8px rgba(0, 120, 255, 0.3) !important;
+  min-width: 1em !important;
+  z-index: 100 !important;
 }
 
 /* Improve cursor interaction */

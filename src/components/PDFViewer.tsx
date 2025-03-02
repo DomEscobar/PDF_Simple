@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -66,6 +65,16 @@ const PDFViewer: React.FC = () => {
     
     // Save original text for potential restoration
     element.setAttribute('data-original-text', element.textContent || '');
+    
+    // Fix visibility issue by setting text color to black
+    element.style.color = 'black';
+    element.style.backgroundColor = 'white';
+    
+    // Store original styles for restoration on blur
+    const originalColor = window.getComputedStyle(element).color;
+    const originalBg = window.getComputedStyle(element).backgroundColor;
+    element.setAttribute('data-original-color', originalColor);
+    element.setAttribute('data-original-bg', originalBg);
   };
 
   // Handle blur on text element
@@ -77,6 +86,17 @@ const PDFViewer: React.FC = () => {
     if (!element.textContent?.trim()) {
       const originalText = element.getAttribute('data-original-text') || '';
       element.textContent = originalText;
+    }
+    
+    // Restore original styles if we're not explicitly keeping the changes
+    // (in this case, we're keeping the changes to maintain visibility)
+    const keepChanges = true; // Set this to false if you want to restore original styles
+    
+    if (!keepChanges) {
+      const originalColor = element.getAttribute('data-original-color') || '';
+      const originalBg = element.getAttribute('data-original-bg') || '';
+      element.style.color = originalColor;
+      element.style.backgroundColor = originalBg;
     }
     
     // Notify about edit
