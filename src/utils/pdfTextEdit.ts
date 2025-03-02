@@ -44,7 +44,10 @@ export const handleTextFocus = (e: Event) => {
   element.setAttribute('data-original-color', originalColor);
   element.setAttribute('data-original-bg', originalBg);
 
-
+ if (element.getAttribute('data-editor-exists')) {
+    return; // If it exists, do nothing
+  }
+  
    // Create a new div with the same dimensions and styling
   const editorDiv = document.createElement('div');
   editorDiv.style.backgroundColor = 'white';
@@ -60,6 +63,8 @@ export const handleTextFocus = (e: Event) => {
   editorDiv.style.top = styles.top;
   // Add the editor div before the original element
   element.parentNode?.insertBefore(editorDiv, element);
+
+    element.setAttribute('data-editor-exists', 'true');
 
 };
 
