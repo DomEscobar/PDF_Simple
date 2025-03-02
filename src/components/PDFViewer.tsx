@@ -31,8 +31,8 @@ const PDFViewer: React.FC = () => {
     // Get click position relative to the PDF container
     const rect = containerRef.current.getBoundingClientRect();
     const position: Position = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) / scale,
+      y: (e.clientY - rect.top) / scale,
     };
 
     // Create appropriate annotation based on active tool

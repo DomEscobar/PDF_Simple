@@ -12,6 +12,7 @@ type DrawingCanvasProps = {
 const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) => {
   const dispatch = useAppDispatch();
   const { activeTool, selectedAnnotationId, selectedColor, lineThickness, isDrawing } = useAppSelector(state => state.annotation);
+  const { scale } = useAppSelector(state => state.pdf);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [currentPath, setCurrentPath] = useState<Position[]>([]);
   const [drawingId, setDrawingId] = useState<string | null>(null);
@@ -62,8 +63,8 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
     
     const rect = canvas.getBoundingClientRect();
     const startPoint: Position = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) / scale,
+      y: (e.clientY - rect.top) / scale,
     };
     
     setCurrentPath([startPoint]);
@@ -72,9 +73,9 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.beginPath();
-      ctx.moveTo(startPoint.x, startPoint.y);
+      ctx.moveTo(startPoint.x * scale, startPoint.y * scale);
       ctx.strokeStyle = selectedColor;
-      ctx.lineWidth = getThicknessValue(lineThickness);
+      ctx.lineWidth = getThicknessValue(lineThickness) * scale;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
     }
@@ -88,8 +89,8 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
     
     const rect = canvas.getBoundingClientRect();
     const newPoint: Position = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: (e.clientX - rect.left) / scale,
+      y: (e.clientY - rect.top) / scale,
     };
     
     // Add point to current path
@@ -98,8 +99,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
     // Draw on canvas
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      const lastPoint = currentPath[currentPath.length - 1];
-      ctx.lineTo(newPoint.x, newPoint.y);
+      ctx.lineTo(newPoint.x * scale, newPoint.y * scale);
       ctx.stroke();
     }
   };
@@ -153,20 +153,20 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({ pageWidth, pageHeight }) 
           if (path.points.length < 2) return;
           
           ctx.beginPath();
-          ctx.moveTo(path.points[0].x, path.points[0].y);
+          ctx.moveTo(path.points[0].x * scale, path.points[0].y * scale);
           
           for (let i = 1; i < path.points.length; i++) {
-            ctx.lineTo(path.points[i].x, path.points[i].y);
+            ctx.lineTo(path.points[i].x * scale, path.points[i].y * scale);
           }
           
           ctx.strokeStyle = path.color;
-          ctx.lineWidth = path.thickness;
+          ctx.lineWidth = path.thickness * scale;
           ctx.lineCap = 'round';
           ctx.lineJoin = 'round';
           ctx.stroke();
         });
       });
-  }, [history.present, activeTool, currentPath]);
+  }, [history.present, activeTool, currentPath, scale]);
   
   return (
     <canvas
