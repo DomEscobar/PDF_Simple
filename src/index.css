@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -181,13 +182,13 @@
   outline: 1px dashed rgba(0, 0, 0, 0.3) !important;
 }
 
-.pdf-clone-editing {
+.pdf-text-editing {
   background-color: white !important;
   color: black !important;
   outline: 2px solid rgba(0, 120, 255, 0.7) !important;
   box-shadow: 0 0 8px rgba(0, 120, 255, 0.3) !important;
-  z-index: 1000 !important;
-  pointer-events: auto !important;
+  min-width: 1em !important;
+  z-index: 100 !important;
 }
 
 /* Improve cursor interaction */
