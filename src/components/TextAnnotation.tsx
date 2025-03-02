@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { deleteAnnotation, setSelectedAnnotationId, updateAnnotation } from '@/store/slices/annotationSlice';
@@ -155,13 +156,17 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
 
   return (
     <div
-      className={`annotation ${isSelected ? 'ring-2 ring-primary' : ''}`}
+      className={`annotation text-annotation ${isSelected ? 'ring-2 ring-primary' : ''}`}
       style={{
+        position: 'absolute',
         left: annotation.position.x * scale,
         top: annotation.position.y * scale,
         width: annotation.size.width * scale,
         height: annotation.size.height * scale,
-        zIndex: isSelected ? 100 : 10,
+        zIndex: isSelected ? 100 : 30,
+        backgroundColor: 'rgba(255, 255, 255, 0.9)',
+        borderRadius: '4px',
+        boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
         transition: 'none'
       }}
       onMouseDown={handleMouseDown}
