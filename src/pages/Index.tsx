@@ -1,13 +1,52 @@
-// Update this page (the content is just a fallback if you fail to update the page)
 
-const Index = () => {
+import React, { useEffect } from 'react';
+import { Provider } from 'react-redux';
+import { store } from '@/store';
+import PDFViewer from '@/components/PDFViewer';
+import Toolbar from '@/components/Toolbar';
+
+const PDFEditorApp: React.FC = () => {
+  // Listen for keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Undo: Ctrl/Cmd + Z
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        store.dispatch({ type: 'annotation/undo' });
+      }
+      
+      // Redo: Ctrl/Cmd + Shift + Z or Ctrl/Cmd + Y
+      if ((e.ctrlKey || e.metaKey) && ((e.key === 'z' && e.shiftKey) || e.key === 'y')) {
+        e.preventDefault();
+        store.dispatch({ type: 'annotation/redo' });
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
-      </div>
+    <div className="editor-wrapper">
+      <Toolbar />
+      <PDFViewer />
     </div>
+  );
+};
+
+const Index: React.FC = () => {
+  return (
+    <Provider store={store}>
+      <div className="w-full h-screen flex flex-col overflow-hidden">
+        <header className="bg-editor-panel py-3 px-6 border-b border-editor-border">
+          <h1 className="text-2xl font-light tracking-tight">Advanced PDF Editor</h1>
+        </header>
+        
+        <main className="flex-1 overflow-hidden">
+          <PDFEditorApp />
+        </main>
+      </div>
+    </Provider>
   );
 };
 
