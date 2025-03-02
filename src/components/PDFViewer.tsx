@@ -5,7 +5,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setTotalPages } from '@/store/slices/pdfSlice';
-import { createTextAnnotation, setIsDrawing } from '@/store/slices/annotationSlice';
+import { setIsDrawing } from '@/store/slices/annotationSlice';
 import DrawingCanvas from './DrawingCanvas';
 import TextAnnotation from './TextAnnotation';
 import SignatureBox from './SignatureBox';
@@ -24,21 +24,110 @@ const PDFViewer: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<Error | null>(null);
 
-  // Handle PDF click for adding annotations
+  // Make text elements editable after PDF rendering
+  useEffect(() => {
+    if (!url || isLoading) return;
+
+    // Wait for the PDF to render
+    const timeout = setTimeout(() => {
+      makeTextElementsEditable();
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [url, currentPage, isLoading, scale]);
+
+  // Function to make text elements editable
+  const makeTextElementsEditable = () => {
+    if (!containerRef.current) return;
+
+    // Find all text span elements in the PDF
+    const textElements = containerRef.current.querySelectorAll('.textLayer span');
+
+    textElements.forEach((element) => {
+      // Make each text element editable
+      element.setAttribute('contenteditable', 'true');
+      
+      // Add styling for better UX
+      element.classList.add('pdf-editable-text');
+      
+      // Add focus and blur event handlers
+      element.addEventListener('focus', handleTextFocus);
+      element.addEventListener('blur', handleTextBlur);
+    });
+
+    // Add more CSS for the editable text
+    addEditableTextStyles();
+  };
+
+  // Handle focus on text element
+  const handleTextFocus = (e: Event) => {
+    const element = e.target as HTMLElement;
+    element.classList.add('pdf-text-editing');
+    
+    // Save original text for potential restoration
+    element.setAttribute('data-original-text', element.textContent || '');
+  };
+
+  // Handle blur on text element
+  const handleTextBlur = (e: Event) => {
+    const element = e.target as HTMLElement;
+    element.classList.remove('pdf-text-editing');
+    
+    // If empty, restore original text
+    if (!element.textContent?.trim()) {
+      const originalText = element.getAttribute('data-original-text') || '';
+      element.textContent = originalText;
+    }
+    
+    // Notify about edit
+    toast.success('Text updated');
+  };
+
+  // Add styles for editable text
+  const addEditableTextStyles = () => {
+    // Check if styles already exist
+    if (document.getElementById('pdf-editable-styles')) return;
+    
+    // Create style element
+    const styleElement = document.createElement('style');
+    styleElement.id = 'pdf-editable-styles';
+    
+    // Define styles
+    styleElement.textContent = `
+      .pdf-editable-text {
+        cursor: text;
+        transition: background-color 0.2s linear;
+        border-radius: 2px;
+        padding: 1px;
+      }
+      .pdf-editable-text:hover {
+        background-color: rgba(255, 255, 0, 0.2);
+        outline: 1px dashed rgba(0, 0, 0, 0.3);
+      }
+      .pdf-text-editing {
+        background-color: rgba(255, 255, 255, 0.9) !important;
+        outline: 2px solid rgba(0, 120, 255, 0.7) !important;
+        box-shadow: 0 0 8px rgba(0, 120, 255, 0.3);
+      }
+    `;
+    
+    // Add styles to document
+    document.head.appendChild(styleElement);
+  };
+
+  // Handle PDF click (only for drawing now)
   const handlePDFClick = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
     
-    // Get click position relative to the PDF container
-    const rect = containerRef.current.getBoundingClientRect();
-    const position: Position = {
-      x: (e.clientX - rect.left) / scale,
-      y: (e.clientY - rect.top) / scale,
-    };
-
-    // Create appropriate annotation based on active tool
-    if (activeTool === 'text') {
-      dispatch(createTextAnnotation({ position }));
-    } else if (activeTool === 'draw') {
+    // Only handle clicks for drawing
+    if (activeTool === 'draw') {
+      // Get click position relative to the PDF container
+      const rect = containerRef.current.getBoundingClientRect();
+      const position: Position = {
+        x: (e.clientX - rect.left) / scale,
+        y: (e.clientY - rect.top) / scale,
+      };
+      
       dispatch(setIsDrawing(true));
     }
   };

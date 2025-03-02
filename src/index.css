@@ -157,6 +157,29 @@
   @apply pointer-events-auto cursor-crosshair;
 }
 
+/* Styles for editable PDF text */
+.textLayer {
+  z-index: 20;
+}
+
+.textLayer span {
+  position: absolute;
+  white-space: pre;
+  transform-origin: 0% 0%;
+  line-height: 1;
+}
+
+.pdf-editable-text:focus {
+  outline: none;
+  background-color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 5px rgba(0, 120, 255, 0.5);
+}
+
+/* Improve cursor interaction */
+.textLayer span {
+  pointer-events: all !important;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
