@@ -18,10 +18,10 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 
 const PDFViewer: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { url, currentPage, scale } = useAppSelector(state => state.pdf);
+  const { url, currentPage, totalPages, scale } = useAppSelector(state => state.pdf);
   const { activeTool, selectedAnnotationId, history } = useAppSelector(state => state.annotation);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
+  const [pageSizes, setPageSizes] = useState<{ width: number; height: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<Error | null>(null);
 
@@ -35,7 +35,7 @@ const PDFViewer: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [url, currentPage, isLoading, scale]);
+  }, [url, isLoading, scale]);
 
   // Handle PDF click (only for drawing now)
   const handlePDFClick = (e: React.MouseEvent) => {
@@ -58,6 +58,8 @@ const PDFViewer: React.FC = () => {
   const handleDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     dispatch(setTotalPages(numPages));
     setIsLoading(false);
+    // Initialize page sizes array
+    setPageSizes(Array(numPages).fill({ width: 0, height: 0 }));
     toast(`Document loaded with ${numPages} pages`);
   };
 
@@ -70,11 +72,15 @@ const PDFViewer: React.FC = () => {
   };
 
   // Handle page render success to get page dimensions
-  const handlePageRenderSuccess = (page: any) => {
+  const handlePageRenderSuccess = (page: any, index: number) => {
     const viewport = page.getViewport({ scale: 1 });
-    setPageSize({
-      width: viewport.width * scale,
-      height: viewport.height * scale,
+    setPageSizes(prev => {
+      const newSizes = [...prev];
+      newSizes[index] = {
+        width: viewport.width * scale,
+        height: viewport.height * scale,
+      };
+      return newSizes;
     });
   };
 
@@ -93,7 +99,7 @@ const PDFViewer: React.FC = () => {
 
       {/* Render PDF document */}
       {url && (
-        <div className="relative flex justify-center">
+        <div className="relative flex flex-col items-center space-y-6 py-6">
           <Document
             file={url}
             onLoadSuccess={handleDocumentLoadSuccess}
@@ -101,27 +107,31 @@ const PDFViewer: React.FC = () => {
             loading={<div>Loading PDF...</div>}
             className="animate-fade-in"
           >
-            <Page
-              pageNumber={currentPage}
-              scale={scale}
-              renderTextLayer={true}
-              renderAnnotationLayer={true}
-              onRenderSuccess={handlePageRenderSuccess}
-              className="shadow-lg"
-            />
+            {Array.from(new Array(totalPages), (_, index) => (
+              <div key={`page_${index + 1}`} className="relative mb-8">
+                <Page
+                  pageNumber={index + 1}
+                  scale={scale}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={true}
+                  onRenderSuccess={(page) => handlePageRenderSuccess(page, index)}
+                  className="shadow-lg"
+                />
+                
+                {/* Drawing canvas overlay for each page */}
+                <DrawingCanvas
+                  pageWidth={pageSizes[index]?.width || 0}
+                  pageHeight={pageSizes[index]?.height || 0}
+                />
+                
+                {/* Render all annotations for each page */}
+                <PDFAnnotationsLayer 
+                  history={history.filter(item => item.pageNumber === index + 1)} 
+                  selectedAnnotationId={selectedAnnotationId}
+                />
+              </div>
+            ))}
           </Document>
-
-          {/* Drawing canvas overlay */}
-          <DrawingCanvas
-            pageWidth={pageSize.width}
-            pageHeight={pageSize.height}
-          />
-          
-          {/* Render all annotations */}
-          <PDFAnnotationsLayer 
-            history={history} 
-            selectedAnnotationId={selectedAnnotationId}
-          />
         </div>
       )}
     </div>
