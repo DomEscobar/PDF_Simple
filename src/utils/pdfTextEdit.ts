@@ -31,13 +31,19 @@ export const makeTextElementsEditable = (containerRef: React.RefObject<HTMLDivEl
 export const enableTextLayerEditing = (containerRef: React.RefObject<HTMLDivElement>) => {
   if (!containerRef.current) return;
   
-  // Enable the text layers
-  const textLayers = containerRef.current.querySelectorAll('.react-pdf__Page__textContent, .textLayer');
-  textLayers.forEach((layer) => {
-    (layer as HTMLElement).style.pointerEvents = 'auto';
+  // Enable the text container layers
+  const textContainers = containerRef.current.querySelectorAll('.react-pdf__Page__textContent, .textLayer');
+  textContainers.forEach((container) => {
+    (container as HTMLElement).style.pointerEvents = 'auto';
+    
+    // Also enable all child elements inside these containers
+    const childElements = container.querySelectorAll('*');
+    childElements.forEach((child) => {
+      (child as HTMLElement).style.pointerEvents = 'auto';
+    });
   });
   
-  // Also enable all the editable text elements
+  // Additionally ensure all editable text elements are enabled
   const editableTexts = containerRef.current.querySelectorAll('.pdf-editable-text');
   editableTexts.forEach((text) => {
     (text as HTMLElement).style.pointerEvents = 'auto';
@@ -48,13 +54,19 @@ export const enableTextLayerEditing = (containerRef: React.RefObject<HTMLDivElem
 export const disableTextLayerEditing = (containerRef: React.RefObject<HTMLDivElement>) => {
   if (!containerRef.current) return;
   
-  // Disable the text layers
-  const textLayers = containerRef.current.querySelectorAll('.react-pdf__Page__textContent, .textLayer');
-  textLayers.forEach((layer) => {
-    (layer as HTMLElement).style.pointerEvents = 'none';
+  // Disable the text container layers
+  const textContainers = containerRef.current.querySelectorAll('.react-pdf__Page__textContent, .textLayer');
+  textContainers.forEach((container) => {
+    (container as HTMLElement).style.pointerEvents = 'none';
+    
+    // Also disable all child elements inside these containers
+    const childElements = container.querySelectorAll('*');
+    childElements.forEach((child) => {
+      (child as HTMLElement).style.pointerEvents = 'none';
+    });
   });
   
-  // Also disable all the editable text elements
+  // Additionally ensure all editable text elements are disabled
   const editableTexts = containerRef.current.querySelectorAll('.pdf-editable-text');
   editableTexts.forEach((text) => {
     (text as HTMLElement).style.pointerEvents = 'none';

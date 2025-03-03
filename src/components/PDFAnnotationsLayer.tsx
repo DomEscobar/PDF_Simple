@@ -59,9 +59,9 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
   // Determine pointer-events style based on active tool
   const getPointerEventsStyle = () => {
     if (activeTool === 'draw') {
-      return { pointerEvents: 'none' as const };
+      return { pointerEvents: 'none' } as React.CSSProperties;
     } else {
-      return { pointerEvents: 'all' as const };
+      return { pointerEvents: 'all' } as React.CSSProperties;
     }
   };
 
@@ -73,9 +73,7 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
       <div 
         ref={layerRef}
         className="relative w-full h-full" 
-        style={{ 
-          ...getPointerEventsStyle()
-        }} 
+        style={getPointerEventsStyle()} 
         onClick={handleClick}
       >
         {/* Render all annotations for current page */}
