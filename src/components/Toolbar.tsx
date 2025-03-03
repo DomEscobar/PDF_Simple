@@ -33,6 +33,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Position, FontFamily, TextAnnotation } from '@/types';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
+import { scaleFactor } from './PDFViewer';
 
 const Toolbar: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -173,38 +176,118 @@ const Toolbar: React.FC = () => {
 
   const handleExportPDF = async () => {
     try {
-      const pdfContainer = document.querySelector('#pdf-container');
-      if (!pdfContainer) {
-        toast.error('PDF container not found');
-        return;
-      }
-
-      if (!window.html2canvas) {
-        toast.error('HTML2Canvas not found. This is required for PDF export.');
+      // Check if there are pages to export
+      const pages = document.querySelectorAll('.doc-pages');
+      if (!pages || pages.length === 0) {
+        toast.error('No PDF pages found to export');
         return;
       }
 
       toast.loading('Generating PDF...');
 
-      const canvas = await window.html2canvas(pdfContainer as HTMLElement, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        allowTaint: true,
-        backgroundColor: null
-      });
+      // Store original zoom level
+      const originalScaleFactor = scaleFactor;
 
-      const pdf = new window.jspdf.jsPDF({
+      // Temporarily reset zoom to 1 for consistent output
+      const documentContainer = document.querySelector('#pdf-container') as HTMLElement;
+      if (documentContainer) {
+        documentContainer.style.transform = 'scale(1.0)';
+        documentContainer.style.transformOrigin = 'top center';
+      }
+
+      // Let the DOM update before capturing
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Create a new PDF document
+      const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'px',
-        format: [canvas.width, canvas.height]
+        format: 'a4'
       });
 
-      const imgData = canvas.toDataURL('image/png');
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+      // PREPARE TEXT ELEMENTS: Fix the positioning of all editable text elements before capturing
+      const editableTextElements = document.querySelectorAll('.pdf-editable-text');
+      const originalStyles: { [key: string]: string } = {};
 
+      // Store original positions and apply absolute positioning
+      editableTextElements.forEach((element, index) => {
+        const el = element as HTMLElement;
+        const id = `text-export-${index}`;
+
+        // Store original styles
+        originalStyles[id] = el.style.cssText;
+
+        // Set element ID for restoration later
+        el.id = id;
+
+        // Ensure the text is positioned correctly during capture by fixing its position
+        el.style.position = 'absolute';
+        el.style.marginTop = '-0.5rem';
+        el.style.backgroundColor = 'transparent';
+      });
+
+      // Process each page individually
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i] as HTMLElement;
+
+        // If not the first page, add a new page to PDF
+        if (i > 0) {
+          pdf.addPage();
+        }
+
+        // Get the dimensions of the current page
+        const { width, height } = page.getBoundingClientRect();
+
+        // Capture the current page with html2canvas
+        const canvas = await html2canvas(page, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          allowTaint: true,
+          backgroundColor: '#FFFFFF',
+          // Ensure we capture all elements
+          ignoreElements: (element) => {
+            // Ignore any irrelevant elements 
+            return element.classList.contains('ignore-export');
+          }
+        });
+
+        // Convert canvas to image data
+        const imgData = canvas.toDataURL('image/png', 1.0);
+
+        // Set PDF page size to match the canvas dimensions
+        if (i === 0) {
+          // For first page, we need to resize the existing page
+          pdf.internal.pageSize.width = canvas.width;
+          pdf.internal.pageSize.height = canvas.height;
+        } else {
+          // For subsequent pages, we adjust the page that was just added
+          pdf.internal.pageSize.width = canvas.width;
+          pdf.internal.pageSize.height = canvas.height;
+        }
+
+        // Add the page image to the PDF
+        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
+      }
+
+      // Save the PDF
       const pdfName = 'annotated-document.pdf';
       pdf.save(pdfName);
+
+      // Restore original zoom level
+      if (documentContainer) {
+        documentContainer.style.transform = `scale(${originalScaleFactor})`;
+        documentContainer.style.transformOrigin = 'top center';
+      }
+
+      editableTextElements.forEach((element, index) => {
+        const el = element as HTMLElement;
+        const id = `text-export-${index}`;
+
+        if (originalStyles[id]) {
+          el.style.cssText = originalStyles[id];
+        }
+      });
 
       toast.dismiss();
       toast.success('PDF exported successfully!');
@@ -212,6 +295,8 @@ const Toolbar: React.FC = () => {
       console.error('Error exporting PDF:', error);
       toast.dismiss();
       toast.error('Failed to export PDF. Please try again.');
+    } finally {
+      toast.dismiss();
     }
   };
 

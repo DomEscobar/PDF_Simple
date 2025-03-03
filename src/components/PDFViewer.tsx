@@ -328,6 +328,7 @@ const PDFViewer: React.FC = () => {
       {url && (
         <div
           ref={pdfContainerRef}
+          id="pdf-container"
           className="relative flex flex-col items-center space-y-6 py-6 transition-transform"
         >
           <Document
@@ -340,7 +341,7 @@ const PDFViewer: React.FC = () => {
             className="document-container animate-fade-in"
           >
             {Array.from(new Array(totalPages), (_, index) => (
-              <div key={`page_${index + 1}`} className="relative mb-8">
+              <div key={`page_${index + 1}`} className="relative mb-8 doc-pages">
                 <Page
                   pageNumber={index + 1}
                   renderTextLayer={true}

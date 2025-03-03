@@ -150,7 +150,6 @@
   position: absolute;
   white-space: pre;
   transform-origin: 0% 0%;
-  line-height: 1;
 }
 
 .pdf-editable-text {
@@ -158,7 +157,6 @@
   transition: background-color 0.2s, color 0.2s !important;
   font-family: sans-serif !important;
   border-radius: 2px !important;
-  padding: 1px !important;
   min-width: 1em !important;
 }
 
