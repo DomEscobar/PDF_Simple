@@ -4,7 +4,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setTotalPages, loadPDF } from '@/store/slices/pdfSlice';
-import { setIsDrawing, createTextAnnotation, setSelectedAnnotationId } from '@/store/slices/annotationSlice';
+import { setIsDrawing, createTextAnnotation } from '@/store/slices/annotationSlice';
 import DrawingCanvas from './DrawingCanvas';
 import { Position } from '@/types';
 import { toast } from 'sonner';
@@ -120,17 +120,6 @@ const PDFViewer: React.FC = () => {
   // Handle PDF click
   const handlePDFClick = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
-    
-    // Check if we clicked on the background - if target is the containerRef or its direct child
-    const isBackgroundClick = e.target === containerRef.current || 
-                             (e.target instanceof Element && 
-                              e.target.parentElement === containerRef.current);
-    
-    // Deselect annotation when clicking on empty space
-    if (isBackgroundClick && activeTool === 'select') {
-      dispatch(setSelectedAnnotationId(null));
-      return;
-    }
     
     // Handle different tool clicks
     if (activeTool === 'draw') {

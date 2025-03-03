@@ -153,7 +153,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
 
   return (
     <div
-      className={`absolute annotation-element ${isSelected ? 'ring-2 ring-primary' : 'border border-gray-200'}`}
+      className={`absolute ${isSelected ? 'ring-2 ring-primary' : 'border border-gray-200'}`}
       style={{
         left: annotation.position.x * scale,
         top: annotation.position.y * scale,
