@@ -4,7 +4,7 @@ import { Position, Color, LineThickness, Annotation, EditorHistory, TextAnnotati
 
 // Define the initial state
 interface AnnotationState {
-  activeTool: 'select' | 'text' | 'draw' | 'signature' | 'eraser';
+  activeTool: 'select' | 'text' | 'draw' | 'signature' | 'eraser' | 'image';
   selectedAnnotationId: string | null;
   selectedColor: Color;
   lineThickness: LineThickness;

@@ -130,6 +130,10 @@ const PDFViewer: React.FC = () => {
       dispatch(setSelectedAnnotationId(null));
     }
 
+    if (activeTool === 'select') {
+      document.body.style.cursor = 'text';
+    }
+
     if (activeTool === 'draw') {
       document.body.style.cursor = 'crosshair';
     } else if (activeTool === 'text' && !isAnnotationClick) {
@@ -307,7 +311,7 @@ const PDFViewer: React.FC = () => {
           <Document
             file={url}
             ref={documentRef}
-            
+
             onLoadSuccess={handleDocumentLoadSuccess}
             onLoadError={handleDocumentLoadError}
             loading={<div>Loading PDF...</div>}

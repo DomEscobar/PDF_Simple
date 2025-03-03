@@ -505,7 +505,16 @@ const Toolbar: React.FC = () => {
               className="hidden"
             />
             <ActionButton
-              onClick={() => imageInputRef.current?.click()}
+              className="cursor-pointer"
+              active={activeTool === 'image'}
+              onClick={() => {
+                dispatch(setActiveTool('image'));
+                setShowColorPicker(false);
+                setShowLineThickness(false);
+                setShowFontOptions(false);
+                imageInputRef.current?.click()
+              }}
+
               icon={<Image size={18} />}
               tooltip="Upload Image"
             />

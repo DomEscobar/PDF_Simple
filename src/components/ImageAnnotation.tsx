@@ -13,15 +13,15 @@ type ImageAnnotationProps = {
 const ImageAnnotation: React.FC<ImageAnnotationProps> = ({ annotation, isSelected }) => {
   const dispatch = useAppDispatch();
   const { activeTool } = useAppSelector(state => state.annotation);
-  const { scale } = useAppSelector(state => state.pdf);
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
+  const scale = 1; // Pseudo LET IT
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (activeTool !== 'select') return;
-    
+    if (activeTool !== 'image') return;
+
     e.stopPropagation();
     dispatch(setSelectedAnnotationId(annotation.id));
 
@@ -33,8 +33,8 @@ const ImageAnnotation: React.FC<ImageAnnotationProps> = ({ annotation, isSelecte
   };
 
   const handleResizeStart = (e: React.MouseEvent, direction: string) => {
-    if (activeTool !== 'select') return;
-    
+    if (activeTool !== 'image') return;
+
     e.stopPropagation();
     setIsResizing(true);
     setResizeDirection(direction);
@@ -51,20 +51,20 @@ const ImageAnnotation: React.FC<ImageAnnotationProps> = ({ annotation, isSelecte
           x: (e.clientX - dragOffset.x) / scale,
           y: (e.clientY - dragOffset.y) / scale
         };
-        
+
         dispatch(updateAnnotation({
           ...annotation,
           position: newPosition
         }));
       } else if (isResizing && resizeDirection) {
         e.preventDefault();
-        
+
         const deltaX = e.clientX - dragOffset.x;
         const deltaY = e.clientY - dragOffset.y;
-        
+
         let newSize: Size = { ...annotation.size };
         let newPosition: Position = { ...annotation.position };
-        
+
         switch (resizeDirection) {
           case 'ne':
             newSize.width = Math.max(50, annotation.size.width + (deltaX / scale));
@@ -87,13 +87,13 @@ const ImageAnnotation: React.FC<ImageAnnotationProps> = ({ annotation, isSelecte
             newPosition.y = annotation.position.y + (deltaY / scale);
             break;
         }
-        
+
         dispatch(updateAnnotation({
           ...annotation,
           size: newSize,
           position: newPosition
         }));
-        
+
         setDragOffset({
           x: e.clientX,
           y: e.clientY
@@ -125,7 +125,8 @@ const ImageAnnotation: React.FC<ImageAnnotationProps> = ({ annotation, isSelecte
 
   return (
     <div
-      className={`absolute ${isSelected ? 'ring-2 ring-primary' : 'border border-gray-200'}`}
+
+      className={`z-40 absolute annotation-element ${isSelected ? 'ring-2 ring-primary' : 'border border-gray-200'} ${activeTool === 'image' ? 'active' : ''}`}
       style={{
         left: annotation.position.x * scale,
         top: annotation.position.y * scale,
@@ -134,27 +135,28 @@ const ImageAnnotation: React.FC<ImageAnnotationProps> = ({ annotation, isSelecte
         boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         borderRadius: '4px',
         zIndex: isSelected ? 35 : 30,
-        cursor: activeTool === 'select' ? 'move' : 'default'
+        cursor: activeTool === 'image' ? 'move' : 'default'
       }}
       onMouseDown={handleMouseDown}
     >
-      <img 
-        src={annotation.url} 
-        alt="Uploaded annotation" 
+      <img
+        src={annotation.url}
+        alt="Uploaded annotation"
+        draggable={false}
         className="w-full h-full object-contain"
       />
-      
-      {isSelected && activeTool === 'select' && (
+
+      {isSelected && activeTool === 'image' && (
         <>
-          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white top-0 left-0 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize" 
-               onMouseDown={(e) => handleResizeStart(e, 'nw')} />
-          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white top-0 right-0 translate-x-1/2 -translate-y-1/2 cursor-ne-resize" 
-               onMouseDown={(e) => handleResizeStart(e, 'ne')} />
-          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-sw-resize" 
-               onMouseDown={(e) => handleResizeStart(e, 'sw')} />
-          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-se-resize" 
-               onMouseDown={(e) => handleResizeStart(e, 'se')} />
-          
+          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white top-0 left-0 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'nw')} />
+          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white top-0 right-0 translate-x-1/2 -translate-y-1/2 cursor-ne-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'ne')} />
+          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-sw-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'sw')} />
+          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-se-resize"
+            onMouseDown={(e) => handleResizeStart(e, 'se')} />
+
           <button
             className="absolute -top-3 -right-3 bg-destructive text-white rounded-full p-1 opacity-80 hover:opacity-100 transition-opacity"
             onClick={handleDelete}

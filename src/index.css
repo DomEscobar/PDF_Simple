@@ -155,6 +155,7 @@
 .pdf-editable-text {
   cursor: text !important;
   transition: background-color 0.2s, color 0.2s !important;
+  font-family: sans-serif !important;
   border-radius: 2px !important;
   padding: 1px !important;
   min-width: 1em !important;
@@ -185,7 +186,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted));
+  background: hsl(var(--muted-foreground));
   border-radius: 4px;
 }
 
