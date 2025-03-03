@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { finishDrawing, addPointToPath, setIsDrawing } from '@/store/slices/annotationSlice';
@@ -171,13 +170,16 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       });
   }, [history.present, activeTool, currentPath, isDrawing, scale, effectivePageNumber, drawingAnnotation, pageWidth, pageHeight]);
   
-  // Fix TypeScript error by using literal values for pointerEvents
+  // Fix TypeScript error by using literal types for pointerEvents
   const canvasStyle = drawingAnnotation ? 
-    { border: isSelected ? '1px dashed #1e88e5' : 'none', cursor: 'move' } : 
+    { 
+      border: isSelected ? '1px dashed #1e88e5' : 'none', 
+      cursor: 'move' 
+    } : 
     { 
       zIndex: 20,
-      pointerEvents: activeTool === 'draw' ? 'all' : 'none' as const
-    };
+      pointerEvents: activeTool === 'draw' ? 'all' : 'none'
+    } as React.CSSProperties; // Cast to React.CSSProperties to ensure TypeScript accepts it
   
   return (
     <canvas
