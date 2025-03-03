@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for making PDF text elements editable
  */
@@ -20,10 +21,25 @@ export const makeTextElementsEditable = (containerRef: React.RefObject<HTMLDivEl
     // Add focus and blur event handlers
     element.addEventListener('focus', handleTextFocus);
     element.addEventListener('blur', handleTextBlur);
+    
+    // Ensure pointer events are enabled
+    (element as HTMLElement).style.pointerEvents = 'auto';
   });
 
   // Add more CSS for the editable text
   addEditableTextStyles();
+};
+
+// Function to disable text editing
+export const disableTextEditing = (containerRef: React.RefObject<HTMLDivElement>) => {
+  if (!containerRef.current) return;
+  
+  const textElements = containerRef.current.querySelectorAll('.textLayer span');
+  
+  textElements.forEach((element) => {
+    element.setAttribute('contenteditable', 'false');
+    (element as HTMLElement).style.pointerEvents = 'none';
+  });
 };
 
 // Handle focus on text element
@@ -44,11 +60,11 @@ export const handleTextFocus = (e: Event) => {
   element.setAttribute('data-original-color', originalColor);
   element.setAttribute('data-original-bg', originalBg);
 
- if (element.getAttribute('data-editor-exists')) {
+  if (element.getAttribute('data-editor-exists')) {
     return; // If it exists, do nothing
   }
   
-   // Create a new div with the same dimensions and styling
+  // Create a new div with the same dimensions and styling
   const editorDiv = document.createElement('div');
   editorDiv.style.backgroundColor = 'white';
   editorDiv.style.color = 'transparent'; // Use black text for better visibility
@@ -58,15 +74,14 @@ export const handleTextFocus = (e: Event) => {
   // Copy the computed styles and position of the original element
   const styles = window.getComputedStyle(element);
   editorDiv.style.width = styles.width;
-    editorDiv.style.minWidth = styles.minWidth;
+  editorDiv.style.minWidth = styles.minWidth;
   editorDiv.style.height = styles.height;
   editorDiv.style.left = styles.left;
   editorDiv.style.top = styles.top;
   // Add the editor div before the original element
   element.parentNode?.insertBefore(editorDiv, element);
 
-    element.setAttribute('data-editor-exists', 'true');
-
+  element.setAttribute('data-editor-exists', 'true');
 };
 
 // Handle blur on text element

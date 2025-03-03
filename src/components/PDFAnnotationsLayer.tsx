@@ -1,5 +1,5 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useAppSelector, useAppDispatch } from '@/store';
 import { setSelectedAnnotationId } from '@/store/slices/annotationSlice';
 import TextAnnotation from './TextAnnotation';
@@ -55,6 +55,49 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
       document.body.style.cursor = 'default';
     }
   };
+
+  // Effect to control PDF text layer interactivity based on active tool
+  useEffect(() => {
+    // Find all text layers in the document
+    const textLayers = document.querySelectorAll('.react-pdf__Page__textContent, .textLayer');
+    const textElements = document.querySelectorAll('.textLayer span');
+    
+    if (activeTool === 'draw') {
+      // Disable text layer interaction during drawing
+      textLayers.forEach(layer => {
+        (layer as HTMLElement).style.pointerEvents = 'none';
+      });
+      textElements.forEach(element => {
+        (element as HTMLElement).style.pointerEvents = 'none';
+      });
+    } else if (activeTool === 'text') {
+      // Enable text layer interaction for text editing
+      textLayers.forEach(layer => {
+        (layer as HTMLElement).style.pointerEvents = 'auto';
+      });
+      textElements.forEach(element => {
+        (element as HTMLElement).style.pointerEvents = 'auto';
+      });
+    } else {
+      // For select mode, allow text interaction but disable contentEditable
+      textLayers.forEach(layer => {
+        (layer as HTMLElement).style.pointerEvents = 'auto';
+      });
+      textElements.forEach(element => {
+        if (activeTool !== 'select') {
+          (element as HTMLElement).contentEditable = 'false';
+        }
+        (element as HTMLElement).style.pointerEvents = 'auto';
+      });
+    }
+    
+    // Cleanup function
+    return () => {
+      textLayers.forEach(layer => {
+        (layer as HTMLElement).style.pointerEvents = 'auto';
+      });
+    };
+  }, [activeTool]);
 
   return (
     <div
