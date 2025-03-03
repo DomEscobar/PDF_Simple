@@ -12,9 +12,7 @@ import {
   createImageAnnotation
 } from '@/store/slices/annotationSlice';
 import {
-  loadPDF,
-  zoomIn,
-  zoomOut,
+  loadPDF
 } from '@/store/slices/pdfSlice';
 import ActionButton from './ActionButton';
 import {
@@ -386,12 +384,12 @@ const Toolbar: React.FC = () => {
         
         <div className="flex items-center gap-2 border-r border-editor-border pr-2">
           <ActionButton
-            onClick={() => dispatch(zoomOut())}
+            onClick={() => window.zoomOutDom && window.zoomOutDom()}
             icon={<ZoomOut size={18} />}
             tooltip="Zoom Out"
           />
           <ActionButton
-            onClick={() => dispatch(zoomIn())}
+            onClick={() => window.zoomInDom && window.zoomInDom()}
             icon={<ZoomIn size={18} />}
             tooltip="Zoom In"
           />
