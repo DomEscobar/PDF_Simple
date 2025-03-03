@@ -8,7 +8,6 @@ const initialState: PDFDocument = {
   totalPages: 0,
   currentPage: 1,
   scale: 1.0,
-  domScale: 1.0, // Add a new property for DOM-based scaling
 };
 
 const pdfSlice = createSlice({
@@ -40,20 +39,11 @@ const pdfSlice = createSlice({
     setScale: (state, action: PayloadAction<number>) => {
       state.scale = action.payload;
     },
-    setDomScale: (state, action: PayloadAction<number>) => {
-      state.domScale = action.payload;
-    },
     zoomIn: (state) => {
       state.scale = Math.min(state.scale + 0.1, 3.0);
     },
     zoomOut: (state) => {
       state.scale = Math.max(state.scale - 0.1, 0.5);
-    },
-    zoomInDom: (state) => {
-      state.domScale = Math.min(state.domScale + 0.1, 3.0);
-    },
-    zoomOutDom: (state) => {
-      state.domScale = Math.max(state.domScale - 0.1, 0.5);
     },
   },
 });
@@ -65,11 +55,8 @@ export const {
   nextPage,
   previousPage,
   setScale,
-  setDomScale,
   zoomIn,
   zoomOut,
-  zoomInDom,
-  zoomOutDom,
 } = pdfSlice.actions;
 
 export const pdfReducer = pdfSlice.reducer;

@@ -18,7 +18,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 
 const PDFViewer: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { url, currentPage, totalPages, scale, domScale } = useAppSelector(state => state.pdf);
+  const { url, currentPage, totalPages, scale } = useAppSelector(state => state.pdf);
   const { activeTool, selectedAnnotationId, history } = useAppSelector(state => state.annotation);
   const containerRef = useRef<HTMLDivElement>(null);
   const pdfContainerRef = useRef<HTMLDivElement>(null);
@@ -27,8 +27,54 @@ const PDFViewer: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [domScale, setDomScale] = useState(1.0);
 
-  // Apply DOM-based zoom effect
+  // Direct DOM-based zoom functions
+  const zoomInDom = () => {
+    if (!pdfContainerRef.current) return;
+    const newScale = Math.min(domScale + 0.1, 3.0);
+    setDomScale(newScale);
+    
+    // Apply scale transform to the PDF container
+    pdfContainerRef.current.style.transform = `scale(${newScale})`;
+    pdfContainerRef.current.style.transformOrigin = 'top center';
+    
+    // Adjust container height to compensate for scaling
+    if (containerRef.current) {
+      const newHeight = pdfContainerRef.current.scrollHeight * newScale;
+      containerRef.current.style.height = `${newHeight}px`;
+    }
+  };
+
+  const zoomOutDom = () => {
+    if (!pdfContainerRef.current) return;
+    const newScale = Math.max(domScale - 0.1, 0.5);
+    setDomScale(newScale);
+    
+    // Apply scale transform to the PDF container
+    pdfContainerRef.current.style.transform = `scale(${newScale})`;
+    pdfContainerRef.current.style.transformOrigin = 'top center';
+    
+    // Adjust container height to compensate for scaling
+    if (containerRef.current) {
+      const newHeight = pdfContainerRef.current.scrollHeight * newScale;
+      containerRef.current.style.height = `${newHeight}px`;
+    }
+  };
+
+  // Make these zoom functions available globally for the toolbar to use
+  useEffect(() => {
+    window.zoomInDom = zoomInDom;
+    window.zoomOutDom = zoomOutDom;
+    
+    return () => {
+      // Clean up when component unmounts
+      delete window.zoomInDom;
+      delete window.zoomOutDom;
+    };
+  }, [domScale]);
+
+  // Apply DOM-based zoom effect on initial load and when PDF changes
   useEffect(() => {
     if (!pdfContainerRef.current) return;
     
@@ -41,7 +87,7 @@ const PDFViewer: React.FC = () => {
       const newHeight = pdfContainerRef.current.scrollHeight * domScale;
       containerRef.current.style.height = `${newHeight}px`;
     }
-  }, [domScale]);
+  }, [domScale, url, isLoading]);
 
   // Make text elements editable after PDF rendering
   useEffect(() => {
@@ -252,5 +298,13 @@ const PDFViewer: React.FC = () => {
     </div>
   );
 };
+
+// Add the window interface for TypeScript
+declare global {
+  interface Window {
+    zoomInDom: () => void;
+    zoomOutDom: () => void;
+  }
+}
 
 export default PDFViewer;

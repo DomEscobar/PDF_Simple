@@ -1,4 +1,3 @@
-
 export type Position = {
   x: number;
   y: number;
@@ -76,5 +75,4 @@ export type PDFDocument = {
   totalPages: number;
   currentPage: number;
   scale: number;
-  domScale: number;
 };
