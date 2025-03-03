@@ -27,7 +27,16 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
   );
   const selectedAnnotationIdToUse = selectedId !== undefined ? selectedId : selectedAnnotationId;
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    // Prevent click event from bubbling up to the container
+    // but only if we've actually clicked on an annotation (not the background)
+    const isAnnotationClick = (e.target as HTMLElement).tagName !== 'DIV' || 
+                              (e.target as HTMLElement).classList.contains('annotation-element');
+                              
+    if (isAnnotationClick) {
+      e.stopPropagation();
+    }
+    
     if (activeTool === 'text') {
       document.body.style.cursor = 'default'; // Switch to default pointer for text tool
     } else {
