@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -125,6 +126,23 @@ const PDFViewer: React.FC = () => {
 
     const target = e.target as HTMLElement;
     const isAnnotationClick = target.closest('.annotation-element') !== null;
+    const isTextEditingClick = target.closest('.pdf-text-editing') !== null || 
+                              target.closest('.text-edit-toolbar') !== null;
+    
+    // Remove any existing text editing toolbar if clicking outside text elements
+    if (!isTextEditingClick && !target.classList.contains('pdf-editable-text')) {
+      const existingToolbar = document.querySelector('.text-edit-toolbar');
+      if (existingToolbar) {
+        existingToolbar.remove();
+      }
+      
+      // Remove editing class from all text elements
+      const editingElements = document.querySelectorAll('.pdf-text-editing');
+      editingElements.forEach(el => {
+        el.classList.remove('pdf-text-editing');
+        (el as HTMLElement).blur();
+      });
+    }
 
     if (isAnnotationActive) {
       return;
@@ -142,7 +160,6 @@ const PDFViewer: React.FC = () => {
     if (activeTool === 'draw') {
       document.body.style.cursor = 'crosshair';
     } else if (activeTool === 'text' && !isAnnotationClick) {
-
       const documentElement = document.querySelector('.document-container') as HTMLElement;
       // Only create a new text annotation if we didn't click on an existing annotation
       const rect = documentElement.getBoundingClientRect();

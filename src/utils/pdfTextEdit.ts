@@ -154,7 +154,39 @@ const createTextToolbar = (element: HTMLElement) => {
   // Add toolbar to document
   document.body.appendChild(toolbar);
   
+  // Add click handler to close toolbar when clicking outside
+  setTimeout(() => {
+    document.addEventListener('click', handleDocumentClick);
+  }, 100);
+  
   return toolbar;
+};
+
+// Handle document clicks to hide toolbar when clicking outside
+const handleDocumentClick = (e: MouseEvent) => {
+  const toolbar = document.querySelector('.text-edit-toolbar');
+  if (!toolbar) return;
+  
+  const target = e.target as HTMLElement;
+  
+  // Check if click is outside toolbar and not on an active editing element
+  const isClickOnToolbar = toolbar.contains(target);
+  const isClickOnEditingElement = target.classList.contains('pdf-text-editing') || 
+                                  target.closest('.pdf-text-editing');
+  
+  if (!isClickOnToolbar && !isClickOnEditingElement) {
+    removeTextToolbar();
+    
+    // Remove the document click handler
+    document.removeEventListener('click', handleDocumentClick);
+    
+    // Remove editing class from all text elements
+    const editingElements = document.querySelectorAll('.pdf-text-editing');
+    editingElements.forEach(el => {
+      el.classList.remove('pdf-text-editing');
+      (el as HTMLElement).blur();
+    });
+  }
 };
 
 // Remove toolbar
@@ -163,23 +195,29 @@ const removeTextToolbar = () => {
   if (existingToolbar) {
     existingToolbar.remove();
   }
+  
+  // Also remove the document click handler
+  document.removeEventListener('click', handleDocumentClick);
 };
 
 // Font size change handler
 const changeFontSize = (element: HTMLElement, delta: number) => {
   const currentSize = parseInt(window.getComputedStyle(element).fontSize) || 12;
   const newSize = Math.max(8, Math.min(72, currentSize + delta)); // Min 8px, Max 72px
-  element.style.fontSize = `${newSize}px`;
+  element.style.fontSize = `${newSize}px !important`;
+  element.setAttribute('style', element.getAttribute('style') + ' font-size: ' + newSize + 'px !important;');
 };
 
 // Text color change handler
 const changeTextColor = (element: HTMLElement, color: string) => {
-  element.style.color = color;
+  element.style.color = `${color} !important`;
+  element.setAttribute('style', element.getAttribute('style') + ' color: ' + color + ' !important;');
 };
 
 // Font family change handler
 const changeFontFamily = (element: HTMLElement, fontFamily: string) => {
-  element.style.fontFamily = fontFamily;
+  element.style.fontFamily = `${fontFamily} !important`;
+  element.setAttribute('style', element.getAttribute('style') + ' font-family: ' + fontFamily + ' !important;');
 };
 
 // Generate unique ID for elements
@@ -196,8 +234,9 @@ export const handleTextFocus = (e: Event) => {
   element.setAttribute('data-original-text', element.textContent || '');
 
   // Fix visibility issue by setting text color to black
-  element.style.color = 'black';
-  element.style.backgroundColor = 'white';
+  element.style.color = 'black !important';
+  element.style.backgroundColor = 'white !important';
+  element.setAttribute('style', element.getAttribute('style') + ' color: black !important; background-color: white !important;');
 
   // Store original styles for restoration on blur
   const originalColor = window.getComputedStyle(element).color;
@@ -242,16 +281,8 @@ export const handleTextBlur = (e: Event) => {
   const element = e.target as HTMLElement;
   element.classList.remove('pdf-text-editing');
   
-  // Remove the toolbar after a short delay to allow clicking on toolbar buttons
-  setTimeout(() => {
-    // Check if focus is still within the editing environment before removing
-    const activeToolbarId = document.querySelector('.text-edit-toolbar')?.getAttribute('data-toolbar-for');
-    const activeElementId = element.getAttribute('data-toolbar-id');
-    
-    if (activeToolbarId !== activeElementId) {
-      removeTextToolbar();
-    }
-  }, 200);
+  // Don't immediately remove the toolbar to allow clicking on toolbar buttons
+  // The toolbar will be removed by document click handler if clicking outside
 };
 
 // Add styles for editable text
@@ -266,64 +297,63 @@ export const addEditableTextStyles = () => {
   // Define styles
   styleElement.textContent = `
     .pdf-editable-text {
-      cursor: text;
-      transition: background-color 0.2s linear;
-      border-radius: 2px;
-      padding: 1px;
+      cursor: text !important;
+      transition: background-color 0.2s linear !important;
+      border-radius: 2px !important;
+      padding: 1px !important;
     }
     .pdf-editable-text:hover {
-      background-color: rgba(255, 255, 0, 0.2);
-      outline: 1px dashed rgba(0, 0, 0, 0.3);
+      background-color: rgba(255, 255, 0, 0.2) !important;
+      outline: 1px dashed rgba(0, 0, 0, 0.3) !important;
     }
     .pdf-text-editing {
       background-color: rgba(255, 255, 255, 0.9) !important;
       outline: 2px solid rgba(0, 120, 255, 0.7) !important;
-      box-shadow: 0 0 8px rgba(0, 120, 255, 0.3);
+      box-shadow: 0 0 8px rgba(0, 120, 255, 0.3) !important;
     }
     .text-edit-toolbar {
-      background-color: #f8f9fa;
-      border: 1px solid #dee2e6;
-      border-radius: 4px;
-      padding: 5px;
-      display: flex;
-      gap: 8px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      background-color: #f8f9fa !important;
+      border: 1px solid #dee2e6 !important;
+      border-radius: 4px !important;
+      padding: 5px !important;
+      display: flex !important;
+      gap: 8px !important;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
     }
     .toolbar-control {
-      display: flex;
-      align-items: center;
-      gap: 2px;
+      display: flex !important;
+      align-items: center !important;
+      gap: 2px !important;
     }
     .toolbar-btn {
-      background-color: #fff;
-      border: 1px solid #ced4da;
-      border-radius: 3px;
-      padding: 2px 5px;
-      font-size: 12px;
-      cursor: pointer;
-      transition: background-color 0.2s;
+      background-color: #fff !important;
+      border: 1px solid #ced4da !important;
+      border-radius: 3px !important;
+      padding: 2px 5px !important;
+      font-size: 12px !important;
+      cursor: pointer !important;
+      transition: background-color 0.2s !important;
     }
     .toolbar-btn:hover {
-      background-color: #e9ecef;
+      background-color: #e9ecef !important;
     }
     .color-picker {
-      width: 20px;
-      height: 20px;
-      padding: 0;
-      border: 1px solid #ced4da;
-      border-radius: 3px;
-      cursor: pointer;
+      width: 20px !important;
+      height: 20px !important;
+      padding: 0 !important;
+      border: 1px solid #ced4da !important;
+      border-radius: 3px !important;
+      cursor: pointer !important;
     }
     .font-select {
-      font-size: 12px;
-      padding: 2px;
-      border: 1px solid #ced4da;
-      border-radius: 3px;
-      background-color: #fff;
+      font-size: 12px !important;
+      padding: 2px !important;
+      border: 1px solid #ced4da !important;
+      border-radius: 3px !important;
+      background-color: #fff !important;
     }
   `;
 
   // Add styles to document
   document.head.appendChild(styleElement);
 };
-

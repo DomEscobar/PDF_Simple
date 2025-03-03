@@ -1,128 +1,115 @@
+import React, { useRef, useState, useEffect } from 'react';
+import { toast } from 'sonner';
 
-import React, { useEffect, useRef } from 'react';
-import { useAppDispatch, useAppSelector } from '@/store';
-import { deleteAnnotation, setSelectedAnnotationId, updateAnnotation } from '@/store/slices/annotationSlice';
-import { SignatureAnnotation as SignatureAnnotationType, Position } from '@/types';
-import { X } from 'lucide-react';
+interface SignatureBoxProps {
+  onSave: (signatureImage: string) => void;
+  onCancel: () => void;
+  width?: number;
+  height?: number;
+}
 
-type SignatureBoxProps = {
-  annotation: SignatureAnnotationType;
-  isSelected: boolean;
-};
-
-const SignatureBox: React.FC<SignatureBoxProps> = ({ annotation, isSelected }) => {
-  const dispatch = useAppDispatch();
-  const { activeTool } = useAppSelector(state => state.annotation);
-  const { scale } = useAppSelector(state => state.pdf);
+const SignatureBox: React.FC<SignatureBoxProps> = ({
+  onSave,
+  onCancel,
+  width = 300,
+  height = 150
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const [dragOffset, setDragOffset] = React.useState({ x: 0, y: 0 });
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [lastX, setLastX] = useState(0);
+  const [lastY, setLastY] = useState(0);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    
-    canvas.width = annotation.size.width * scale;
-    canvas.height = annotation.size.height * scale;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if (annotation.path.length < 2) return;
-    
-    ctx.beginPath();
-    ctx.moveTo(annotation.path[0].x * scale, annotation.path[0].y * scale);
-    
-    for (let i = 1; i < annotation.path.length; i++) {
-      ctx.lineTo(annotation.path[i].x * scale, annotation.path[i].y * scale);
-    }
-    
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 2 * scale;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.stroke();
-  }, [annotation, scale]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (activeTool !== 'select') return;
-    
-    e.stopPropagation();
-    dispatch(setSelectedAnnotationId(annotation.id));
-    
-    setIsDragging(true);
-    setDragOffset({
-      x: e.clientX - (annotation.position.x * scale),
-      y: e.clientY - (annotation.position.y * scale)
-    });
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }, []);
+
+  const draw = (e: MouseEvent) => {
+    if (!isDrawing) return;
+
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.beginPath();
+    ctx.moveTo(lastX, lastY);
+    ctx.lineTo(e.offsetX, e.offsetY);
+    ctx.stroke();
+    setLastX(e.offsetX);
+    setLastY(e.offsetY);
   };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      
-      const newPosition: Position = {
-        x: (e.clientX - dragOffset.x) / scale,
-        y: (e.clientY - dragOffset.y) / scale
-      };
-      
-      dispatch(updateAnnotation({
-        ...annotation,
-        position: newPosition
-      }));
-    };
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDrawing(true);
+    setLastX(e.nativeEvent.offsetX);
+    setLastY(e.nativeEvent.offsetY);
+  };
 
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
+  const handleMouseUp = () => {
+    setIsDrawing(false);
+  };
 
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
+  const handleMouseOut = () => {
+    setIsDrawing(false);
+  };
 
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [isDragging, dragOffset, annotation, dispatch, scale]);
+  const handleMouseMove = (e: React.MouseEvent) => {
+    draw(e.nativeEvent);
+  };
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    dispatch(deleteAnnotation(annotation.id));
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const saveSignature = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const signatureImage = canvas.toDataURL('image/png');
+    onSave(signatureImage);
+    toast.success('Signature saved!');
   };
 
   return (
-    <div
-      className={`absolute ${isSelected ? 'ring-2 ring-primary' : 'border border-gray-200'}`}
-      style={{
-        left: annotation.position.x * scale,
-        top: annotation.position.y * scale,
-        width: annotation.size.width * scale,
-        height: annotation.size.height * scale,
-        zIndex: isSelected ? 35 : 30,
-        backgroundColor: 'white',
-        borderRadius: '4px',
-        cursor: activeTool === 'select' ? 'move' : 'default',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-      }}
-      onMouseDown={handleMouseDown}
-    >
-      <canvas 
-        ref={canvasRef} 
-        className="w-full h-full"
+    <div className="panel-glass p-4 flex flex-col gap-4">
+      <canvas
+        ref={canvasRef}
+        width={width}
+        height={height}
+        style={{ border: '1px solid #000', cursor: 'crosshair' }}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseOut={handleMouseOut}
+        onMouseMove={handleMouseMove}
       />
-      
-      {isSelected && activeTool === 'select' && (
-        <button
-          className="absolute -top-3 -right-3 bg-destructive text-white rounded-full p-1 opacity-80 hover:opacity-100 transition-opacity"
-          onClick={handleDelete}
-        >
-          <X size={14} />
+      <div className="flex justify-between">
+        <button className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded" onClick={clearCanvas}>
+          Clear
         </button>
-      )}
+        <div className="flex gap-2">
+          <button className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded" onClick={onCancel}>
+            Cancel
+          </button>
+          <button className="bg-primary hover:bg-primary/90 text-white font-bold py-2 px-4 rounded" onClick={saveSignature}>
+            Save
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
