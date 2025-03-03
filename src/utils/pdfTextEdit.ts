@@ -73,10 +73,16 @@ export const disableTextLayerEditing = (containerRef: React.RefObject<HTMLDivEle
   });
 };
 
+// Current active text element being edited
+let activeTextElement: HTMLElement | null = null;
+
 // Handle focus on text element
 export const handleTextFocus = (e: Event) => {
   const element = e.target as HTMLElement;
   element.classList.add('pdf-text-editing');
+  
+  // Set as active element
+  activeTextElement = element;
 
   // Save original text for potential restoration
   element.setAttribute('data-original-text', element.textContent || '');
@@ -91,35 +97,133 @@ export const handleTextFocus = (e: Event) => {
   element.setAttribute('data-original-color', originalColor);
   element.setAttribute('data-original-bg', originalBg);
 
-  if (element.getAttribute('data-editor-exists')) {
-    return; // If it exists, do nothing
-  }
-
-  // Create a new div with the same dimensions and styling
-  const editorDiv = document.createElement('div');
-  editorDiv.style.backgroundColor = 'white';
-  editorDiv.style.color = 'transparent'; // Use black text for better visibility
-  editorDiv.style.position = 'absolute';
-  editorDiv.style.outline = 'none';
-
-  // Copy the computed styles and position of the original element
-  const styles = window.getComputedStyle(element);
-  editorDiv.style.width = element.clientWidth + 'px';
-  editorDiv.style.minWidth = styles.minWidth;
-  editorDiv.style.height = styles.height;
-  editorDiv.style.left = styles.left;
-  editorDiv.style.top = styles.top;
-  // Add the editor div before the original element
-  element.parentNode?.insertBefore(editorDiv, element);
-
-  element.setAttribute('data-editor-exists', 'true');
-
+  // Create and show the text editor toolbar
+  createTextEditorToolbar(element);
 };
 
 // Handle blur on text element
 export const handleTextBlur = (e: Event) => {
   const element = e.target as HTMLElement;
   element.classList.remove('pdf-text-editing');
+  
+  // If we're not clicking inside the toolbar, remove it
+  setTimeout(() => {
+    const relatedTarget = (e as FocusEvent).relatedTarget as HTMLElement | null;
+    const toolbar = document.querySelector('.pdf-text-toolbar');
+    
+    if (relatedTarget && toolbar && toolbar.contains(relatedTarget)) {
+      // Clicked inside toolbar, don't remove it
+      return;
+    }
+    
+    // Remove the toolbar if it exists
+    removeTextEditorToolbar();
+    activeTextElement = null;
+  }, 100);
+};
+
+// Create text editor toolbar
+const createTextEditorToolbar = (element: HTMLElement) => {
+  // Remove any existing toolbar
+  removeTextEditorToolbar();
+  
+  // Create toolbar container
+  const toolbar = document.createElement('div');
+  toolbar.className = 'pdf-text-toolbar';
+  
+  // Get element position for toolbar placement
+  const rect = element.getBoundingClientRect();
+  
+  // Position toolbar above the element
+  toolbar.style.position = 'absolute';
+  toolbar.style.left = `${rect.left}px`;
+  toolbar.style.top = `${rect.top - 40}px`;
+  toolbar.style.zIndex = '1000';
+  toolbar.style.backgroundColor = 'white';
+  toolbar.style.borderRadius = '4px';
+  toolbar.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+  toolbar.style.padding = '4px';
+  toolbar.style.display = 'flex';
+  toolbar.style.gap = '8px';
+  
+  // Font family selector
+  const fontFamilySelect = document.createElement('select');
+  fontFamilySelect.className = 'pdf-toolbar-select';
+  fontFamilySelect.innerHTML = `
+    <option value="sans-serif">Sans</option>
+    <option value="serif">Serif</option>
+    <option value="monospace">Mono</option>
+    <option value="cursive">Cursive</option>
+  `;
+  fontFamilySelect.addEventListener('change', (e) => {
+    if (activeTextElement) {
+      activeTextElement.style.fontFamily = (e.target as HTMLSelectElement).value;
+    }
+  });
+  
+  // Font size selector
+  const fontSizeSelect = document.createElement('select');
+  fontSizeSelect.className = 'pdf-toolbar-select';
+  fontSizeSelect.innerHTML = `
+    <option value="9px">9px</option>
+    <option value="10px">10px</option>
+    <option value="11px">11px</option>
+    <option value="12px">12px</option>
+    <option value="14px">14px</option>
+    <option value="16px">16px</option>
+    <option value="18px">18px</option>
+    <option value="20px">20px</option>
+    <option value="24px">24px</option>
+  `;
+  fontSizeSelect.addEventListener('change', (e) => {
+    if (activeTextElement) {
+      activeTextElement.style.fontSize = (e.target as HTMLSelectElement).value;
+    }
+  });
+  
+  // Color picker
+  const colors = ['#000000', '#1e88e5', '#43a047', '#e53935', '#fb8c00', '#8e24aa'];
+  const colorContainer = document.createElement('div');
+  colorContainer.style.display = 'flex';
+  colorContainer.style.gap = '4px';
+  
+  colors.forEach(color => {
+    const colorBtn = document.createElement('div');
+    colorBtn.className = 'pdf-toolbar-color';
+    colorBtn.style.width = '16px';
+    colorBtn.style.height = '16px';
+    colorBtn.style.borderRadius = '50%';
+    colorBtn.style.backgroundColor = color;
+    colorBtn.style.cursor = 'pointer';
+    colorBtn.style.border = '1px solid #ddd';
+    
+    colorBtn.addEventListener('click', () => {
+      if (activeTextElement) {
+        activeTextElement.style.color = color;
+      }
+    });
+    
+    colorContainer.appendChild(colorBtn);
+  });
+  
+  // Add all controls to toolbar
+  toolbar.appendChild(document.createTextNode('Font:'));
+  toolbar.appendChild(fontFamilySelect);
+  toolbar.appendChild(document.createTextNode('Size:'));
+  toolbar.appendChild(fontSizeSelect);
+  toolbar.appendChild(document.createTextNode('Color:'));
+  toolbar.appendChild(colorContainer);
+  
+  // Add the toolbar to the document
+  document.body.appendChild(toolbar);
+};
+
+// Remove text editor toolbar
+const removeTextEditorToolbar = () => {
+  const existingToolbar = document.querySelector('.pdf-text-toolbar');
+  if (existingToolbar) {
+    existingToolbar.remove();
+  }
 };
 
 // Add styles for editable text
@@ -148,8 +252,19 @@ export const addEditableTextStyles = () => {
       outline: 2px solid rgba(0, 120, 255, 0.7) !important;
       box-shadow: 0 0 8px rgba(0, 120, 255, 0.3);
     }
+    .pdf-toolbar-select {
+      padding: 2px 4px;
+      border: 1px solid #ddd;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+    .pdf-text-toolbar {
+      font-size: 12px;
+      align-items: center;
+    }
   `;
 
   // Add styles to document
   document.head.appendChild(styleElement);
 };
+
