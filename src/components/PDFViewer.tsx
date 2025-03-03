@@ -28,11 +28,9 @@ const PDFViewer: React.FC = () => {
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   
-  // Pure DOM-based zoom functions without state updates
   const zoomInDom = () => {
     if (!pdfContainerRef.current || !containerRef.current) return;
     
-    // Get current scale from transform property or default to 1
     const currentTransform = pdfContainerRef.current.style.transform;
     let currentScale = 1.0;
     
@@ -43,14 +41,10 @@ const PDFViewer: React.FC = () => {
       }
     }
     
-    // Calculate new scale (max 3.0)
     const newScale = Math.min(currentScale + 0.1, 3.0);
-    
-    // Apply scale transform directly to the PDF container
     pdfContainerRef.current.style.transform = `scale(${newScale})`;
     pdfContainerRef.current.style.transformOrigin = 'top center';
     
-    // Adjust container height to compensate for scaling
     const newHeight = pdfContainerRef.current.scrollHeight * newScale;
     containerRef.current.style.height = `${newHeight}px`;
   };
@@ -58,7 +52,6 @@ const PDFViewer: React.FC = () => {
   const zoomOutDom = () => {
     if (!pdfContainerRef.current || !containerRef.current) return;
     
-    // Get current scale from transform property or default to 1
     const currentTransform = pdfContainerRef.current.style.transform;
     let currentScale = 1.0;
     
@@ -69,47 +62,35 @@ const PDFViewer: React.FC = () => {
       }
     }
     
-    // Calculate new scale (min 0.5)
     const newScale = Math.max(currentScale - 0.1, 0.5);
-    
-    // Apply scale transform directly to the PDF container
     pdfContainerRef.current.style.transform = `scale(${newScale})`;
     pdfContainerRef.current.style.transformOrigin = 'top center';
     
-    // Adjust container height to compensate for scaling
     const newHeight = pdfContainerRef.current.scrollHeight * newScale;
     containerRef.current.style.height = `${newHeight}px`;
   };
 
-  // Make zoom functions available globally
   useEffect(() => {
     window.zoomInDom = zoomInDom;
     window.zoomOutDom = zoomOutDom;
     
     return () => {
-      // Clean up when component unmounts
       delete window.zoomInDom;
       delete window.zoomOutDom;
     };
   }, []);
 
-  // Apply initial transform when PDF is loaded
   useEffect(() => {
     if (!pdfContainerRef.current || !containerRef.current || isLoading) return;
     
-    // Initialize with scale 1
     pdfContainerRef.current.style.transform = 'scale(1)';
     pdfContainerRef.current.style.transformOrigin = 'top center';
-    
-    // Set initial container height
     containerRef.current.style.height = `${pdfContainerRef.current.scrollHeight}px`;
   }, [url, isLoading]);
 
-  // Make text elements editable after PDF rendering
   useEffect(() => {
     if (!url || isLoading) return;
 
-    // Wait for the PDF to render
     const timeout = setTimeout(() => {
       makeTextElementsEditable(containerRef);
     }, 500);
@@ -117,52 +98,46 @@ const PDFViewer: React.FC = () => {
     return () => clearTimeout(timeout);
   }, [url, isLoading, scale]);
 
-  // Handle PDF click
   const handlePDFClick = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
     
-    // Check if clicking on an annotation element
     const target = e.target as HTMLElement;
     const isAnnotationClick = target.closest('.annotation-element') !== null;
     
-    // If clicking outside annotations, deselect current annotation
     if (!isAnnotationClick) {
       dispatch(setSelectedAnnotationId(null));
     }
     
-    // Handle different tool clicks
     if (activeTool === 'draw') {
-      // Drawing is handled by DrawingCanvas component
       document.body.style.cursor = 'crosshair';
-    } else if (activeTool === 'text') {
-      // Get click position relative to the PDF container
+    } else if (activeTool === 'text' && !isAnnotationClick) {
       const rect = containerRef.current.getBoundingClientRect();
       const position: Position = {
         x: (e.clientX - rect.left) / scale,
         y: (e.clientY - rect.top) / scale,
       };
       
-      // Create text annotation at click position without switching tools
-      dispatch(createTextAnnotation({ position, pageNumber: currentPage }));
+      dispatch(createTextAnnotation({ 
+        position, 
+        pageNumber: currentPage,
+        content: '',
+        fontSize: 11,
+        color: '#000000'
+      }));
       
-      // Keep cursor as text
       document.body.style.cursor = 'text';
     } else if (activeTool === 'select') {
-      // Change cursor to indicate edit mode
       document.body.style.cursor = 'text';
     }
   };
 
-  // Handle document load success
   const handleDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     dispatch(setTotalPages(numPages));
     setIsLoading(false);
-    // Initialize page sizes array
     setPageSizes(Array(numPages).fill({ width: 0, height: 0 }));
     toast.success(`Document loaded with ${numPages} pages`);
   };
 
-  // Handle document load error
   const handleDocumentLoadError = (error: Error) => {
     console.error('Error loading PDF:', error);
     setLoadError(error);
@@ -170,7 +145,6 @@ const PDFViewer: React.FC = () => {
     toast.error('Failed to load PDF document');
   };
 
-  // Handle page render success to get page dimensions
   const handlePageRenderSuccess = (page: any, index: number) => {
     const viewport = page.getViewport({ scale: 1 });
     setPageSizes(prev => {
@@ -183,29 +157,24 @@ const PDFViewer: React.FC = () => {
     });
   };
 
-  // Handle file selection
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check if file is a PDF
     if (file.type !== 'application/pdf') {
       toast.error('Please select a PDF file');
       return;
     }
 
-    // Load the PDF file
     const fileUrl = URL.createObjectURL(file);
     dispatch(loadPDF({ url: fileUrl, name: file.name }));
     toast.success(`Loaded: ${file.name}`);
 
-    // Reset the file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
-  // Handle drag and drop events
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
@@ -224,19 +193,16 @@ const PDFViewer: React.FC = () => {
     
     const file = files[0];
     
-    // Check if file is a PDF
     if (file.type !== 'application/pdf') {
       toast.error('Please select a PDF file');
       return;
     }
     
-    // Load the PDF file
     const fileUrl = URL.createObjectURL(file);
     dispatch(loadPDF({ url: fileUrl, name: file.name }));
     toast.success(`Loaded: ${file.name}`);
   };
 
-  // Set cursor based on active tool when it changes
   useEffect(() => {
     if (activeTool === 'text') {
       document.body.style.cursor = 'text';
@@ -247,7 +213,6 @@ const PDFViewer: React.FC = () => {
     }
   }, [activeTool]);
 
-  // Render upload zone
   const renderUploadZone = () => {
     return (
       <div 
@@ -287,17 +252,14 @@ const PDFViewer: React.FC = () => {
       className="pdf-container overflow-auto"
       onClick={handlePDFClick}
     >
-      {/* Show upload zone if no PDF is loaded */}
       {!url && renderUploadZone()}
       
-      {/* Show loading states or errors if present */}
       {url && <PDFLoadingStates 
         url={url} 
         isLoading={isLoading} 
         loadError={loadError} 
       />}
 
-      {/* Render PDF document */}
       {url && (
         <div 
           ref={pdfContainerRef}
@@ -321,17 +283,16 @@ const PDFViewer: React.FC = () => {
                   className="shadow-lg"
                 />
                 
-                {/* Drawing canvas overlay for each page */}
                 <DrawingCanvas
                   pageWidth={pageSizes[index]?.width || 0}
                   pageHeight={pageSizes[index]?.height || 0}
                   pageNumber={index + 1}
                 />
                 
-                {/* Render all annotations for each page */}
                 <PDFAnnotationsLayer 
                   currentPageAnnotations={history.present.filter(item => item.pageNumber === index + 1)} 
                   selectedAnnotationId={selectedAnnotationId}
+                  onAnnotationLayerClick={(e) => {}}
                 />
               </div>
             ))}
@@ -342,7 +303,6 @@ const PDFViewer: React.FC = () => {
   );
 };
 
-// Add the window interface for TypeScript
 declare global {
   interface Window {
     zoomInDom: () => void;

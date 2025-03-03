@@ -89,6 +89,8 @@ export const createTextAnnotation = createAction<{
   content?: string;
   pageNumber: number;
   fontFamily?: FontFamily;
+  fontSize?: number;
+  color?: string;
 }>('annotation/createTextAnnotation');
 
 const annotationSlice = createSlice({
@@ -253,7 +255,14 @@ const annotationSlice = createSlice({
       })
       // Handle text annotation creation - remove automatic tool switching
       .addCase(createTextAnnotation, (state, action) => {
-        const { position, content = 'Text annotation', pageNumber, fontFamily = 'sans' } = action.payload;
+        const { 
+          position, 
+          content = '', 
+          pageNumber, 
+          fontFamily = 'sans',
+          fontSize = 11,
+          color = '#000000'
+        } = action.payload;
         
         const newAnnotation: TextAnnotation = {
           id: uuidv4(),
@@ -261,8 +270,8 @@ const annotationSlice = createSlice({
           content,
           position,
           size: { width: 200, height: 100 },
-          color: state.selectedColor,
-          fontSize: 16,
+          color,
+          fontSize,
           fontFamily,
           createdAt: Date.now(),
           pageNumber: pageNumber,
