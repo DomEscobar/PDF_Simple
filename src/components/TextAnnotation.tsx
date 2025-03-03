@@ -11,6 +11,8 @@ type TextAnnotationProps = {
   isSelected: boolean;
 };
 
+export let isAnnotationActive = false;
+
 const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected }) => {
   const dispatch = useAppDispatch();
   const { activeTool } = useAppSelector(state => state.annotation);
@@ -26,6 +28,14 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
       textareaRef.current.focus();
     }
   }, [isSelected]);
+
+  useEffect(() => {
+    if (isDragging || isResizing) {
+      isAnnotationActive = true;
+    } else {
+      isAnnotationActive = false;
+    }
+  }, [isDragging, isResizing]);
 
   // Handle blur (losing focus) events
   const handleBlur = (e: React.FocusEvent) => {
@@ -192,14 +202,14 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
 
   return (
     <div
-      className={`absolute annotation-element ${isSelected ? 'ring-2 ring-primary' : ''}`}
+      className={`absolute annotation-element ${isSelected ? 'ring-1 ring-primary' : ''}`}
       style={{
         left: annotation.position.x,
         top: annotation.position.y,
         width: annotation.size.width,
         height: annotation.size.height,
         backgroundColor: 'white',
-        borderRadius: '4px',
+        borderRadius: '2px',
         zIndex: isSelected ? 35 : 30
       }}
       onMouseDown={handleMouseDown}
@@ -209,7 +219,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         ref={textareaRef}
         value={annotation.content}
         onChange={handleContentChange}
-        className={`w-full h-full p-1 resize-none bg-transparent border-none focus:outline-none focus:ring-0 ${getFontFamilyStyle()}`}
+        className={`w-full h-full overflow-hidden resize-none p-1 bg-transparent border-none focus:outline-none focus:ring-0 ${getFontFamilyStyle()}`}
         style={{
           color: annotation.color,
           fontSize: `${annotation.fontSize}px`,
@@ -222,20 +232,20 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
 
       {isSelected && (activeTool === 'text') && (
         <>
-          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white top-0 left-0 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize"
+          <div className="absolute w-2 h-2 bg-primary rounded-full border border-white top-0 left-0 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize"
             onMouseDown={(e) => handleResizeStart(e, 'nw')} />
-          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white top-0 right-0 translate-x-1/2 -translate-y-1/2 cursor-ne-resize"
+          <div className="absolute w-2 h-2 bg-primary rounded-full border border-white top-0 right-0 translate-x-1/2 -translate-y-1/2 cursor-ne-resize"
             onMouseDown={(e) => handleResizeStart(e, 'ne')} />
-          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-sw-resize"
+          <div className="absolute w-2 h-2 bg-primary rounded-full border border-white bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-sw-resize"
             onMouseDown={(e) => handleResizeStart(e, 'sw')} />
-          <div className="absolute w-3 h-3 bg-primary rounded-full border border-white bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-se-resize"
+          <div className="absolute w-2 h-2 bg-primary rounded-full border border-white bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-se-resize"
             onMouseDown={(e) => handleResizeStart(e, 'se')} />
 
           <button
             className="absolute -top-3 -right-3 bg-destructive text-white rounded-full p-1 opacity-80 hover:opacity-100 transition-opacity"
             onClick={handleDelete}
           >
-            <X size={14} />
+            <X size={11} />
           </button>
         </>
       )}

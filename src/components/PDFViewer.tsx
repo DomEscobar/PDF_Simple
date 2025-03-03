@@ -12,6 +12,7 @@ import { makeTextElementsEditable, enableTextLayerEditing, disableTextLayerEditi
 import PDFLoadingStates from './PDFLoadingStates';
 import PDFAnnotationsLayer from './PDFAnnotationsLayer';
 import { FileUp, Upload } from 'lucide-react';
+import { isAnnotationActive } from './TextAnnotation';
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
@@ -124,6 +125,10 @@ const PDFViewer: React.FC = () => {
 
     const target = e.target as HTMLElement;
     const isAnnotationClick = target.closest('.annotation-element') !== null;
+
+    if (isAnnotationActive) {
+      return;
+    }
 
     // Don't deselect when clicking on annotations
     if (!isAnnotationClick) {
