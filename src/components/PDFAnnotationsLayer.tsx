@@ -64,7 +64,9 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
       <div 
         ref={layerRef}
         className="relative w-full h-full" 
-        style={{ pointerEvents: 'all' }} 
+        style={{ 
+          pointerEvents: activeTool === 'draw' ? 'none' : 'all'
+        }} 
         onClick={handleClick}
       >
         {/* Render all annotations for current page */}

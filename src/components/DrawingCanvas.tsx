@@ -1,10 +1,8 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { finishDrawing, addPointToPath, setIsDrawing } from '@/store/slices/annotationSlice';
 import { Position, DrawingAnnotation } from '@/types';
 
-// Updated props to include the drawingAnnotation prop
 type DrawingCanvasProps = {
   pageWidth?: number;
   pageHeight?: number;
@@ -25,16 +23,12 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
   const { scale } = useAppSelector(state => state.pdf);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // If we're rendering an existing drawing annotation, we don't need pageNumber from props
   const effectivePageNumber = pageNumber || (drawingAnnotation?.pageNumber || 1);
   
-  // Setup canvas size and context when dimensions change
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     
-    // If we're rendering an existing annotation, we don't need to set up the canvas
-    // for drawing new annotations
     if (drawingAnnotation) return;
     
     if (pageWidth && pageHeight) {
@@ -48,12 +42,10 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     }
   }, [pageWidth, pageHeight, drawingAnnotation]);
   
-  // Get thickness value based on lineThickness setting
   const getThicknessValue = (thickness: string): number => {
     return thickness === 'thin' ? 2 : thickness === 'medium' ? 5 : 8;
   };
   
-  // Handle drawing interactions - only if not rendering an existing annotation
   const handleDrawStart = (e: React.MouseEvent) => {
     if (activeTool !== 'draw' || drawingAnnotation) return;
     
@@ -91,7 +83,6 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     dispatch(finishDrawing(effectivePageNumber));
   };
   
-  // Render current drawing path or existing drawing annotation
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -99,9 +90,7 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
-    // Set up canvas dimensions for existing annotation
     if (drawingAnnotation) {
-      // Determine canvas size based on drawing content
       let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
       
       drawingAnnotation.paths.forEach(path => {
@@ -113,15 +102,12 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
         });
       });
       
-      // Set canvas dimensions with some padding
       const padding = 10;
       canvas.width = (maxX - minX + padding * 2) * scale;
       canvas.height = (maxY - minY + padding * 2) * scale;
       
-      // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
-      // Render the drawing annotation
       drawingAnnotation.paths.forEach(path => {
         if (path.points.length < 2) return;
         
@@ -142,14 +128,10 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       return;
     }
     
-    // From here on, we're handling the drawing canvas for creating new annotations
-    
-    // Clear canvas
     if (pageWidth && pageHeight) {
       ctx.clearRect(0, 0, pageWidth, pageHeight);
     }
     
-    // Draw active path if any
     if (currentPath && currentPath.points.length > 0 && isDrawing) {
       ctx.beginPath();
       ctx.moveTo(currentPath.points[0].x * scale, currentPath.points[0].y * scale);
@@ -165,7 +147,6 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       ctx.stroke();
     }
     
-    // Render all drawing annotations for this page (if not rendering an existing annotation)
     history.present
       .filter(ann => ann.type === 'drawing' && ann.pageNumber === effectivePageNumber)
       .forEach(annotation => {
@@ -189,10 +170,12 @@ const DrawingCanvas: React.FC<DrawingCanvasProps> = ({
       });
   }, [history.present, activeTool, currentPath, isDrawing, scale, effectivePageNumber, drawingAnnotation, pageWidth, pageHeight]);
   
-  // Different styling based on whether it's an existing annotation or the drawing canvas
   const canvasStyle = drawingAnnotation ? 
     { border: isSelected ? '1px dashed #1e88e5' : 'none', cursor: 'move' } : 
-    { zIndex: 20 };
+    { 
+      zIndex: 20,
+      pointerEvents: activeTool === 'draw' ? 'all' : 'none'
+    };
   
   return (
     <canvas
