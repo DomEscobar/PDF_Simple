@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '@/store';
 import { deleteAnnotation, setSelectedAnnotationId, updateAnnotation } from '@/store/slices/annotationSlice';
 import { TextAnnotation as TextAnnotationType, Position, Size } from '@/types';
 import { X } from 'lucide-react';
+import { scaleFactor } from './PDFViewer';
 
 type TextAnnotationProps = {
   annotation: TextAnnotationType;
@@ -18,7 +19,6 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const scale = 1 //pseudo
 
   // Focus on the textarea when selected or newly created
   useEffect(() => {
@@ -29,7 +29,9 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
 
   // Handle blur (losing focus) events
   const handleBlur = (e: React.FocusEvent) => {
+    if (isResizing || isDragging) return;
     setTimeout(() => {
+
 
       const currentElement = e.currentTarget;
       const relatedTarget = e.relatedTarget as Node | null;
@@ -40,6 +42,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
 
       if (
         (currentElement?.contains(relatedTarget) ||
+          relatedTarget?.contains(currentElement) ||
           toolbar?.contains(activeElement))
       ) {
         // If focus moves within the annotation or toolbar, do nothing
@@ -63,8 +66,8 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
     if (activeTool === 'text') {
       setIsDragging(true);
       setDragOffset({
-        x: e.clientX - (annotation.position.x * scale),
-        y: e.clientY - (annotation.position.y * scale)
+        x: e.clientX - (annotation.position.x * scaleFactor),
+        y: e.clientY - (annotation.position.y * scaleFactor)
       });
     }
   };
@@ -83,6 +86,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
+      const scale = scaleFactor;
       if (isDragging) {
         const newPosition: Position = {
           x: (e.clientX - dragOffset.x) / scale,
@@ -102,24 +106,27 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         let newSize: Size = { ...annotation.size };
         let newPosition: Position = { ...annotation.position };
 
+        const scale = 1;
+        const minWidth = 30;
+        const minHeight = 10;
         switch (resizeDirection) {
           case 'ne':
-            newSize.width = Math.max(50, annotation.size.width + (deltaX / scale));
-            newSize.height = Math.max(30, annotation.size.height - (deltaY / scale));
+            newSize.width = Math.max(minWidth, annotation.size.width + (deltaX / scale));
+            newSize.height = Math.max(minHeight, annotation.size.height - (deltaY / scale));
             newPosition.y = annotation.position.y + (deltaY / scale);
             break;
           case 'se':
-            newSize.width = Math.max(50, annotation.size.width + (deltaX / scale));
-            newSize.height = Math.max(30, annotation.size.height + (deltaY / scale));
+            newSize.width = Math.max(minWidth, annotation.size.width + (deltaX / scale));
+            newSize.height = Math.max(minHeight, annotation.size.height + (deltaY / scale));
             break;
           case 'sw':
-            newSize.width = Math.max(50, annotation.size.width - (deltaX / scale));
-            newSize.height = Math.max(30, annotation.size.height + (deltaY / scale));
+            newSize.width = Math.max(minWidth, annotation.size.width - (deltaX / scale));
+            newSize.height = Math.max(minHeight, annotation.size.height + (deltaY / scale));
             newPosition.x = annotation.position.x + (deltaX / scale);
             break;
           case 'nw':
-            newSize.width = Math.max(50, annotation.size.width - (deltaX / scale));
-            newSize.height = Math.max(30, annotation.size.height - (deltaY / scale));
+            newSize.width = Math.max(minWidth, annotation.size.width - (deltaX / scale));
+            newSize.height = Math.max(minHeight, annotation.size.height - (deltaY / scale));
             newPosition.x = annotation.position.x + (deltaX / scale);
             newPosition.y = annotation.position.y + (deltaY / scale);
             break;
@@ -139,9 +146,11 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
     };
 
     const handleMouseUp = () => {
-      setIsDragging(false);
-      setIsResizing(false);
-      setResizeDirection(null);
+      setTimeout(() => {
+        setIsDragging(false);
+        setIsResizing(false);
+        setResizeDirection(null);
+      }, 200);
     };
 
     if (isDragging || isResizing) {
@@ -153,7 +162,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
     };
-  }, [isDragging, isResizing, resizeDirection, dragOffset, annotation, dispatch, scale]);
+  }, [isDragging, isResizing, resizeDirection, dragOffset, annotation, dispatch]);
 
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     dispatch(updateAnnotation({
@@ -185,10 +194,10 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
     <div
       className={`absolute annotation-element ${isSelected ? 'ring-2 ring-primary' : ''}`}
       style={{
-        left: annotation.position.x * scale,
-        top: annotation.position.y * scale,
-        width: annotation.size.width * scale,
-        height: annotation.size.height * scale,
+        left: annotation.position.x,
+        top: annotation.position.y,
+        width: annotation.size.width,
+        height: annotation.size.height,
         backgroundColor: 'white',
         borderRadius: '4px',
         zIndex: isSelected ? 35 : 30
@@ -203,7 +212,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         className={`w-full h-full p-1 resize-none bg-transparent border-none focus:outline-none focus:ring-0 ${getFontFamilyStyle()}`}
         style={{
           color: annotation.color,
-          fontSize: `${annotation.fontSize * scale}px`,
+          fontSize: `${annotation.fontSize}px`,
           cursor: 'default' // Change cursor to default (arrow pointer) for text
         }}
         onClick={(e) => {
