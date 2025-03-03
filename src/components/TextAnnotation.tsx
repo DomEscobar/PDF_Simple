@@ -20,7 +20,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Focus on the textarea when selected
+  // Focus on the textarea when selected or newly created
   useEffect(() => {
     if (isSelected && textareaRef.current) {
       textareaRef.current.focus();
@@ -48,16 +48,19 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (activeTool !== 'select') return;
+    if (activeTool !== 'select' && activeTool !== 'text') return;
     
     e.stopPropagation();
     dispatch(setSelectedAnnotationId(annotation.id));
 
-    setIsDragging(true);
-    setDragOffset({
-      x: e.clientX - (annotation.position.x * scale),
-      y: e.clientY - (annotation.position.y * scale)
-    });
+    // Don't start dragging if we're in text tool mode
+    if (activeTool === 'select') {
+      setIsDragging(true);
+      setDragOffset({
+        x: e.clientX - (annotation.position.x * scale),
+        y: e.clientY - (annotation.position.y * scale)
+      });
+    }
   };
 
   const handleResizeStart = (e: React.MouseEvent, direction: string) => {
