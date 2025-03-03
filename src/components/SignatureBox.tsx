@@ -1,18 +1,24 @@
+
 import React, { useRef, useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { SignatureAnnotation } from '@/types';
 
 interface SignatureBoxProps {
   onSave: (signatureImage: string) => void;
   onCancel: () => void;
   width?: number;
   height?: number;
+  isSelected?: boolean;
+  annotation?: SignatureAnnotation;
 }
 
 const SignatureBox: React.FC<SignatureBoxProps> = ({
   onSave,
   onCancel,
   width = 300,
-  height = 150
+  height = 150,
+  isSelected,
+  annotation
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);

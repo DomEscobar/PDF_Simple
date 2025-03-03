@@ -171,8 +171,48 @@ const Toolbar: React.FC = () => {
     }
   };
 
-  const handleExportPDF = () => {
-    toast.success('PDF exported successfully!');
+  const handleExportPDF = async () => {
+    try {
+      const pdfContainer = document.querySelector('#pdf-container');
+      if (!pdfContainer) {
+        toast.error('PDF container not found');
+        return;
+      }
+
+      if (!window.html2canvas) {
+        toast.error('HTML2Canvas not found. This is required for PDF export.');
+        return;
+      }
+
+      toast.loading('Generating PDF...');
+
+      const canvas = await window.html2canvas(pdfContainer as HTMLElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        allowTaint: true,
+        backgroundColor: null
+      });
+
+      const pdf = new window.jspdf.jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width, canvas.height]
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+
+      const pdfName = 'annotated-document.pdf';
+      pdf.save(pdfName);
+
+      toast.dismiss();
+      toast.success('PDF exported successfully!');
+    } catch (error) {
+      console.error('Error exporting PDF:', error);
+      toast.dismiss();
+      toast.error('Failed to export PDF. Please try again.');
+    }
   };
 
   const handleSignatureStart = (e: React.MouseEvent) => {
@@ -369,7 +409,6 @@ const Toolbar: React.FC = () => {
     );
   };
 
-  // Get a descriptive tooltip based on the active tool
   const getToolDescription = (tool: string) => {
     switch (tool) {
       case 'select':
@@ -485,17 +524,6 @@ const Toolbar: React.FC = () => {
               </div>
             )}
           </div>
-          {/* <ActionButton
-            onClick={() => {
-              setIsSignatureMode(true);
-              setShowColorPicker(false);
-              setShowLineThickness(false);
-              setShowFontOptions(false);
-            }}
-            icon={<Signature size={18} />}
-            tooltip="Add Signature"
-          /> */}
-
           <div>
             <input
               type="file"
