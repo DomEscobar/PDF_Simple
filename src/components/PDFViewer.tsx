@@ -133,6 +133,7 @@ const PDFViewer: React.FC = () => {
     // Handle different tool clicks
     if (activeTool === 'draw') {
       // Drawing is handled by DrawingCanvas component
+      document.body.style.cursor = 'crosshair';
     } else if (activeTool === 'text') {
       // Get click position relative to the PDF container
       const rect = containerRef.current.getBoundingClientRect();
@@ -146,6 +147,12 @@ const PDFViewer: React.FC = () => {
       
       // Switch to select tool after adding a text annotation
       dispatch(setActiveTool('select'));
+      
+      // Reset cursor
+      document.body.style.cursor = 'default';
+    } else if (activeTool === 'select') {
+      // Change cursor to indicate edit mode
+      document.body.style.cursor = 'text';
     }
   };
 
@@ -231,6 +238,17 @@ const PDFViewer: React.FC = () => {
     dispatch(loadPDF({ url: fileUrl, name: file.name }));
     toast.success(`Loaded: ${file.name}`);
   };
+
+  // Set cursor based on active tool when it changes
+  useEffect(() => {
+    if (activeTool === 'text') {
+      document.body.style.cursor = 'text';
+    } else if (activeTool === 'draw') {
+      document.body.style.cursor = 'crosshair';
+    } else {
+      document.body.style.cursor = 'default';
+    }
+  }, [activeTool]);
 
   // Render upload zone
   const renderUploadZone = () => {

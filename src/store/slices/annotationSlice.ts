@@ -104,6 +104,11 @@ const annotationSlice = createSlice({
       // Handle selected annotation
       .addCase(setSelectedAnnotationId, (state, action: PayloadAction<string | null>) => {
         state.selectedAnnotationId = action.payload;
+        
+        // If selecting an annotation, automatically switch to select tool
+        if (action.payload !== null) {
+          state.activeTool = 'select';
+        }
       })
       // Handle selected color
       .addCase(setSelectedColor, (state, action: PayloadAction<Color>) => {
@@ -275,6 +280,8 @@ const annotationSlice = createSlice({
             future: [],
           },
           selectedAnnotationId: newAnnotation.id,
+          // Automatically switch to select tool after creating text annotation
+          activeTool: 'select'
         };
       })
       

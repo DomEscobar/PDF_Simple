@@ -31,13 +31,18 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
 
   const handleClick = (e: React.MouseEvent) => {
     // If we're clicking the annotations layer itself (not a child annotation)
-    // and we're using the select tool, clear the selection
-    if (e.target === e.currentTarget && activeTool === 'select') {
+    // this is a background click, so clear the selection
+    if (e.target === e.currentTarget) {
       dispatch(setSelectedAnnotationId(null));
     }
     
+    // Set appropriate cursor based on active tool
     if (activeTool === 'text') {
-      document.body.style.cursor = 'default'; // Switch to default pointer for text tool
+      document.body.style.cursor = 'text'; // Text insertion cursor
+    } else if (activeTool === 'draw') {
+      document.body.style.cursor = 'crosshair'; // Drawing cursor
+    } else if (activeTool === 'select') {
+      document.body.style.cursor = 'default'; // Default cursor for selection mode
     } else {
       document.body.style.cursor = 'default';
     }

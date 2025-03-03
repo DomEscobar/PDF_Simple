@@ -16,7 +16,7 @@ import {
 } from '@/store/slices/pdfSlice';
 import ActionButton from './ActionButton';
 import {
-  MousePointer,
+  TextCursor,
   FileDown,
   FileUp,
   Highlighter,
@@ -359,6 +359,20 @@ const Toolbar: React.FC = () => {
     );
   };
 
+  // Get a descriptive tooltip based on the active tool
+  const getToolDescription = (tool: string) => {
+    switch (tool) {
+      case 'select':
+        return 'Edit Mode: Select and modify annotations';
+      case 'text':
+        return 'Text Mode: Add or edit text annotations';
+      case 'draw':
+        return 'Draw Mode: Create or edit drawings';
+      default:
+        return '';
+    }
+  };
+
   return (
     <>
       <div className="bg-editor-panel py-2 px-4 border-b border-editor-border flex items-center gap-2 shadow-sm">
@@ -396,12 +410,15 @@ const Toolbar: React.FC = () => {
         </div>
         
         <div className="flex items-center gap-2 border-r border-editor-border pr-2">
-          <ActionButton
-            onClick={() => dispatch(setActiveTool('select'))}
-            icon={<MousePointer size={18} />}
-            active={activeTool === 'select'}
-            tooltip="Select Tool"
-          />
+          <div className="flex items-center">
+            <span className="text-xs font-medium mr-2 text-gray-600">Mode:</span>
+            <ActionButton
+              onClick={() => dispatch(setActiveTool('select'))}
+              icon={<TextCursor size={18} />}
+              active={activeTool === 'select'}
+              tooltip={getToolDescription('select')}
+            />
+          </div>
           <ActionButton
             onClick={() => {
               dispatch(setActiveTool('text'));
@@ -411,7 +428,7 @@ const Toolbar: React.FC = () => {
             }}
             icon={<FileText size={18} />}
             active={activeTool === 'text'}
-            tooltip="Text Annotation"
+            tooltip={getToolDescription('text')}
           />
           <div className="relative">
             <ActionButton
@@ -423,7 +440,7 @@ const Toolbar: React.FC = () => {
               }}
               icon={<Pen size={18} />}
               active={activeTool === 'draw'}
-              tooltip="Draw Tool"
+              tooltip={getToolDescription('draw')}
             />
             
             {showColorPicker && (
