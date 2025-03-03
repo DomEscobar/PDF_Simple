@@ -20,11 +20,32 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
   const [resizeDirection, setResizeDirection] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  // Focus on the textarea when selected
   useEffect(() => {
     if (isSelected && textareaRef.current) {
       textareaRef.current.focus();
     }
   }, [isSelected]);
+
+  // Handle blur (losing focus) events
+  const handleBlur = (e: React.FocusEvent) => {
+    // Only clear selection if we're not clicking on another part of this annotation
+    // Check if the related target is part of this annotation
+    const currentElement = e.currentTarget;
+    const relatedTarget = e.relatedTarget as Node;
+    
+    if (!currentElement.contains(relatedTarget)) {
+      // If the focus is moving outside this annotation, clear selection
+      setTimeout(() => {
+        // Use setTimeout to let click events happen first
+        // This prevents immediate deselection when clicking on the annotation's controls
+        if (document.activeElement !== textareaRef.current) {
+          // Only deselect if focus isn't still on the textarea
+          dispatch(setSelectedAnnotationId(null));
+        }
+      }, 0);
+    }
+  };
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (activeTool !== 'select') return;
@@ -153,7 +174,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
 
   return (
     <div
-      className={`absolute ${isSelected ? 'ring-2 ring-primary' : 'border border-gray-200'}`}
+      className={`absolute annotation-element ${isSelected ? 'ring-2 ring-primary' : 'border border-gray-200'}`}
       style={{
         left: annotation.position.x * scale,
         top: annotation.position.y * scale,
@@ -165,6 +186,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         zIndex: isSelected ? 35 : 30
       }}
       onMouseDown={handleMouseDown}
+      onBlur={handleBlur}
     >
       <textarea
         ref={textareaRef}
@@ -176,7 +198,10 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
           fontSize: `${annotation.fontSize * scale}px`,
           cursor: 'default' // Change cursor to default (arrow pointer) for text
         }}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          dispatch(setSelectedAnnotationId(annotation.id));
+        }}
       />
       
       {isSelected && activeTool === 'select' && (

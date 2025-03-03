@@ -4,7 +4,7 @@ import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setTotalPages, loadPDF } from '@/store/slices/pdfSlice';
-import { setIsDrawing, createTextAnnotation } from '@/store/slices/annotationSlice';
+import { setIsDrawing, createTextAnnotation, setActiveTool, setSelectedAnnotationId } from '@/store/slices/annotationSlice';
 import DrawingCanvas from './DrawingCanvas';
 import { Position } from '@/types';
 import { toast } from 'sonner';
@@ -121,6 +121,15 @@ const PDFViewer: React.FC = () => {
   const handlePDFClick = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
     
+    // Check if clicking on an annotation element
+    const target = e.target as HTMLElement;
+    const isAnnotationClick = target.closest('.annotation-element') !== null;
+    
+    // If clicking outside annotations, deselect current annotation
+    if (!isAnnotationClick) {
+      dispatch(setSelectedAnnotationId(null));
+    }
+    
     // Handle different tool clicks
     if (activeTool === 'draw') {
       // Drawing is handled by DrawingCanvas component
@@ -132,8 +141,11 @@ const PDFViewer: React.FC = () => {
         y: (e.clientY - rect.top) / scale,
       };
       
-      // Create text annotation at click position - pass currentPage in payload
+      // Create text annotation at click position
       dispatch(createTextAnnotation({ position, pageNumber: currentPage }));
+      
+      // Switch to select tool after adding a text annotation
+      dispatch(setActiveTool('select'));
     }
   };
 

@@ -1,6 +1,7 @@
 
 import React from 'react';
-import { useAppSelector } from '@/store';
+import { useAppSelector, useAppDispatch } from '@/store';
+import { setSelectedAnnotationId } from '@/store/slices/annotationSlice';
 import TextAnnotation from './TextAnnotation';
 import DrawingCanvas from './DrawingCanvas';
 import SignatureBox from './SignatureBox';
@@ -17,6 +18,7 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
   currentPageAnnotations,
   selectedAnnotationId: selectedId
 }) => {
+  const dispatch = useAppDispatch();
   const { history, selectedAnnotationId } = useAppSelector(state => state.annotation);
   const { currentPage, scale } = useAppSelector(state => state.pdf);
   const { activeTool } = useAppSelector(state => state.annotation);
@@ -27,7 +29,13 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
   );
   const selectedAnnotationIdToUse = selectedId !== undefined ? selectedId : selectedAnnotationId;
 
-  const handleClick = () => {
+  const handleClick = (e: React.MouseEvent) => {
+    // If we're clicking the annotations layer itself (not a child annotation)
+    // and we're using the select tool, clear the selection
+    if (e.target === e.currentTarget && activeTool === 'select') {
+      dispatch(setSelectedAnnotationId(null));
+    }
+    
     if (activeTool === 'text') {
       document.body.style.cursor = 'default'; // Switch to default pointer for text tool
     } else {
