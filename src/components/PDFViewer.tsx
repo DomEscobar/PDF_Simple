@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -92,13 +93,11 @@ const PDFViewer: React.FC = () => {
     if (!url || isLoading) return;
 
     const timeout = setTimeout(() => {
-      if (activeTool === 'text') {
-        makeTextElementsEditable(containerRef);
-      }
+      makeTextElementsEditable(containerRef);
     }, 500);
 
     return () => clearTimeout(timeout);
-  }, [url, isLoading, scale, activeTool]);
+  }, [url, isLoading, scale]);
 
   const handlePDFClick = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
@@ -208,42 +207,10 @@ const PDFViewer: React.FC = () => {
   useEffect(() => {
     if (activeTool === 'text') {
       document.body.style.cursor = 'text';
-      
-      // Enable text editing when in text mode
-      if (containerRef.current) {
-        const textLayers = containerRef.current.querySelectorAll('.react-pdf__Page__textContent, .textLayer');
-        textLayers.forEach(layer => {
-          (layer as HTMLElement).style.pointerEvents = 'auto';
-        });
-        
-        setTimeout(() => makeTextElementsEditable(containerRef), 100);
-      }
     } else if (activeTool === 'draw') {
       document.body.style.cursor = 'crosshair';
-      
-      // Disable text editing when in draw mode
-      if (containerRef.current) {
-        const textLayers = containerRef.current.querySelectorAll('.react-pdf__Page__textContent, .textLayer');
-        textLayers.forEach(layer => {
-          (layer as HTMLElement).style.pointerEvents = 'none';
-        });
-      }
     } else {
       document.body.style.cursor = 'default';
-      
-      // In select mode, text layers should be clickable but not editable
-      if (containerRef.current) {
-        const textLayers = containerRef.current.querySelectorAll('.react-pdf__Page__textContent, .textLayer');
-        const textElements = containerRef.current.querySelectorAll('.textLayer span');
-        
-        textLayers.forEach(layer => {
-          (layer as HTMLElement).style.pointerEvents = 'auto';
-        });
-        
-        textElements.forEach(element => {
-          (element as HTMLElement).contentEditable = 'false';
-        });
-      }
     }
   }, [activeTool]);
 
