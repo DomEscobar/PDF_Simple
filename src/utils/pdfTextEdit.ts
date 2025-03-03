@@ -73,6 +73,120 @@ export const disableTextLayerEditing = (containerRef: React.RefObject<HTMLDivEle
   });
 };
 
+// Create text editing toolbar
+const createTextToolbar = (element: HTMLElement) => {
+  // Remove any existing toolbar
+  removeTextToolbar();
+  
+  // Create toolbar container
+  const toolbar = document.createElement('div');
+  toolbar.className = 'text-edit-toolbar';
+  toolbar.setAttribute('data-toolbar-for', element.getAttribute('data-toolbar-id') || '');
+  
+  // Get element position for toolbar placement
+  const rect = element.getBoundingClientRect();
+  const scrollTop = window.scrollY || document.documentElement.scrollTop;
+  
+  // Position toolbar above the element
+  toolbar.style.position = 'absolute';
+  toolbar.style.left = `${rect.left}px`;
+  toolbar.style.top = `${rect.top + scrollTop - 40}px`; // 40px above the element
+  toolbar.style.zIndex = '1000';
+
+  // Font Size controls
+  const fontSizeControl = document.createElement('div');
+  fontSizeControl.className = 'toolbar-control';
+  
+  const decreaseFontBtn = document.createElement('button');
+  decreaseFontBtn.className = 'toolbar-btn';
+  decreaseFontBtn.textContent = 'A-';
+  decreaseFontBtn.onclick = () => changeFontSize(element, -1);
+  
+  const increaseFontBtn = document.createElement('button');
+  increaseFontBtn.className = 'toolbar-btn';
+  increaseFontBtn.textContent = 'A+';
+  increaseFontBtn.onclick = () => changeFontSize(element, 1);
+  
+  fontSizeControl.appendChild(decreaseFontBtn);
+  fontSizeControl.appendChild(increaseFontBtn);
+  
+  // Color picker
+  const colorControl = document.createElement('div');
+  colorControl.className = 'toolbar-control';
+  
+  const colorPicker = document.createElement('input');
+  colorPicker.type = 'color';
+  colorPicker.value = window.getComputedStyle(element).color || '#000000';
+  colorPicker.className = 'color-picker';
+  colorPicker.onchange = (e) => changeTextColor(element, (e.target as HTMLInputElement).value);
+  
+  colorControl.appendChild(colorPicker);
+  
+  // Font family selector
+  const fontFamilyControl = document.createElement('div');
+  fontFamilyControl.className = 'toolbar-control';
+  
+  const fontSelect = document.createElement('select');
+  fontSelect.className = 'font-select';
+  
+  const fonts = [
+    { value: 'sans-serif', label: 'Sans' },
+    { value: 'serif', label: 'Serif' },
+    { value: 'monospace', label: 'Mono' },
+    { value: 'cursive', label: 'Cursive' }
+  ];
+  
+  fonts.forEach(font => {
+    const option = document.createElement('option');
+    option.value = font.value;
+    option.textContent = font.label;
+    fontSelect.appendChild(option);
+  });
+  
+  fontSelect.onchange = (e) => changeFontFamily(element, (e.target as HTMLSelectElement).value);
+  fontFamilyControl.appendChild(fontSelect);
+  
+  // Add all controls to toolbar
+  toolbar.appendChild(fontSizeControl);
+  toolbar.appendChild(colorControl);
+  toolbar.appendChild(fontFamilyControl);
+  
+  // Add toolbar to document
+  document.body.appendChild(toolbar);
+  
+  return toolbar;
+};
+
+// Remove toolbar
+const removeTextToolbar = () => {
+  const existingToolbar = document.querySelector('.text-edit-toolbar');
+  if (existingToolbar) {
+    existingToolbar.remove();
+  }
+};
+
+// Font size change handler
+const changeFontSize = (element: HTMLElement, delta: number) => {
+  const currentSize = parseInt(window.getComputedStyle(element).fontSize) || 12;
+  const newSize = Math.max(8, Math.min(72, currentSize + delta)); // Min 8px, Max 72px
+  element.style.fontSize = `${newSize}px`;
+};
+
+// Text color change handler
+const changeTextColor = (element: HTMLElement, color: string) => {
+  element.style.color = color;
+};
+
+// Font family change handler
+const changeFontFamily = (element: HTMLElement, fontFamily: string) => {
+  element.style.fontFamily = fontFamily;
+};
+
+// Generate unique ID for elements
+const generateUniqueId = () => {
+  return `text-${Math.random().toString(36).substr(2, 9)}`;
+};
+
 // Handle focus on text element
 export const handleTextFocus = (e: Event) => {
   const element = e.target as HTMLElement;
@@ -90,6 +204,14 @@ export const handleTextFocus = (e: Event) => {
   const originalBg = window.getComputedStyle(element).backgroundColor;
   element.setAttribute('data-original-color', originalColor);
   element.setAttribute('data-original-bg', originalBg);
+
+  // Assign ID for toolbar reference if not exists
+  if (!element.getAttribute('data-toolbar-id')) {
+    element.setAttribute('data-toolbar-id', generateUniqueId());
+  }
+  
+  // Create and show toolbar
+  createTextToolbar(element);
 
   if (element.getAttribute('data-editor-exists')) {
     return; // If it exists, do nothing
@@ -113,13 +235,23 @@ export const handleTextFocus = (e: Event) => {
   element.parentNode?.insertBefore(editorDiv, element);
 
   element.setAttribute('data-editor-exists', 'true');
-
 };
 
 // Handle blur on text element
 export const handleTextBlur = (e: Event) => {
   const element = e.target as HTMLElement;
   element.classList.remove('pdf-text-editing');
+  
+  // Remove the toolbar after a short delay to allow clicking on toolbar buttons
+  setTimeout(() => {
+    // Check if focus is still within the editing environment before removing
+    const activeToolbarId = document.querySelector('.text-edit-toolbar')?.getAttribute('data-toolbar-for');
+    const activeElementId = element.getAttribute('data-toolbar-id');
+    
+    if (activeToolbarId !== activeElementId) {
+      removeTextToolbar();
+    }
+  }, 200);
 };
 
 // Add styles for editable text
@@ -148,8 +280,50 @@ export const addEditableTextStyles = () => {
       outline: 2px solid rgba(0, 120, 255, 0.7) !important;
       box-shadow: 0 0 8px rgba(0, 120, 255, 0.3);
     }
+    .text-edit-toolbar {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 4px;
+      padding: 5px;
+      display: flex;
+      gap: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    .toolbar-control {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .toolbar-btn {
+      background-color: #fff;
+      border: 1px solid #ced4da;
+      border-radius: 3px;
+      padding: 2px 5px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .toolbar-btn:hover {
+      background-color: #e9ecef;
+    }
+    .color-picker {
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border: 1px solid #ced4da;
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    .font-select {
+      font-size: 12px;
+      padding: 2px;
+      border: 1px solid #ced4da;
+      border-radius: 3px;
+      background-color: #fff;
+    }
   `;
 
   // Add styles to document
   document.head.appendChild(styleElement);
 };
+
