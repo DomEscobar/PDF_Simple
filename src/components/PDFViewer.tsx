@@ -142,14 +142,11 @@ const PDFViewer: React.FC = () => {
         y: (e.clientY - rect.top) / scale,
       };
       
-      // Create text annotation at click position
+      // Create text annotation at click position without switching tools
       dispatch(createTextAnnotation({ position, pageNumber: currentPage }));
       
-      // Switch to select tool after adding a text annotation
-      dispatch(setActiveTool('select'));
-      
-      // Reset cursor
-      document.body.style.cursor = 'default';
+      // Keep cursor as text
+      document.body.style.cursor = 'text';
     } else if (activeTool === 'select') {
       // Change cursor to indicate edit mode
       document.body.style.cursor = 'text';

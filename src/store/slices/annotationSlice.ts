@@ -251,9 +251,8 @@ const annotationSlice = createSlice({
           future: [],
         };
       })
-      // Handle text annotation creation
+      // Handle text annotation creation - remove automatic tool switching
       .addCase(createTextAnnotation, (state, action) => {
-        // Get pageNumber from payload instead of store.getState()
         const { position, content = 'Text annotation', pageNumber, fontFamily = 'sans' } = action.payload;
         
         const newAnnotation: TextAnnotation = {
@@ -280,14 +279,11 @@ const annotationSlice = createSlice({
             future: [],
           },
           selectedAnnotationId: newAnnotation.id,
-          // Automatically switch to select tool after creating text annotation
-          activeTool: 'select'
         };
       })
       
       // Handle signature annotation creation
       .addCase(createSignatureAnnotation, (state, action) => {
-        // Get pageNumber from payload instead of store.getState()
         const { position, size, path, pageNumber } = action.payload;
         
         const newAnnotation: SignatureAnnotation = {
