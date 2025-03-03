@@ -198,11 +198,15 @@ const Toolbar: React.FC = () => {
       // Let the DOM update before capturing
       await new Promise(resolve => setTimeout(resolve, 300));
 
+      // A4 dimensions in points (PDF unit): 595 x 842 points (72 points per inch)
+      const A4_WIDTH = 595;
+      const A4_HEIGHT = 842;
+
       // Create a new PDF document
       const pdf = new jsPDF({
         orientation: 'portrait',
-        unit: 'px',
-        format: 'a4'
+        unit: 'pt',
+        format: [A4_WIDTH, A4_HEIGHT]
       });
 
       // PREPARE TEXT ELEMENTS: Fix the positioning of all editable text elements before capturing
@@ -232,15 +236,12 @@ const Toolbar: React.FC = () => {
 
         // If not the first page, add a new page to PDF
         if (i > 0) {
-          pdf.addPage();
+          pdf.addPage([A4_WIDTH, A4_HEIGHT]);
         }
-
-        // Get the dimensions of the current page
-        const { width, height } = page.getBoundingClientRect();
 
         // Capture the current page with html2canvas
         const canvas = await html2canvas(page, {
-          scale: 2,
+          scale: 3, // Increase scale for better quality
           useCORS: true,
           logging: false,
           allowTaint: true,
@@ -255,19 +256,30 @@ const Toolbar: React.FC = () => {
         // Convert canvas to image data
         const imgData = canvas.toDataURL('image/png', 1.0);
 
-        // Set PDF page size to match the canvas dimensions
-        if (i === 0) {
-          // For first page, we need to resize the existing page
-          pdf.internal.pageSize.width = canvas.width;
-          pdf.internal.pageSize.height = canvas.height;
+        // Calculate the scaling to fit the A4 page while preserving aspect ratio
+        const pageWidth = A4_WIDTH;
+        const pageHeight = A4_HEIGHT;
+        const canvasAspectRatio = canvas.width / canvas.height;
+        const pageAspectRatio = pageWidth / pageHeight;
+        
+        let renderWidth, renderHeight;
+        
+        if (canvasAspectRatio > pageAspectRatio) {
+          // Canvas is wider compared to its height than the page
+          renderWidth = pageWidth;
+          renderHeight = pageWidth / canvasAspectRatio;
         } else {
-          // For subsequent pages, we adjust the page that was just added
-          pdf.internal.pageSize.width = canvas.width;
-          pdf.internal.pageSize.height = canvas.height;
+          // Canvas is taller compared to its width than the page
+          renderHeight = pageHeight;
+          renderWidth = pageHeight * canvasAspectRatio;
         }
+        
+        // Center the image on the page
+        const xOffset = (pageWidth - renderWidth) / 2;
+        const yOffset = (pageHeight - renderHeight) / 2;
 
-        // Add the page image to the PDF
-        pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height, undefined, 'FAST');
+        // Add the page image to the PDF, maintaining aspect ratio and centered
+        pdf.addImage(imgData, 'PNG', xOffset, yOffset, renderWidth, renderHeight, undefined, 'FAST');
       }
 
       // Save the PDF
