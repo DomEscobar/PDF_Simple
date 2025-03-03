@@ -267,7 +267,7 @@ const annotationSlice = createSlice({
           type: 'text',
           content,
           position,
-          size: { width: 200, height: 100 },
+          size: { width: 150, height: 40 },
           color,
           fontSize,
           fontFamily,

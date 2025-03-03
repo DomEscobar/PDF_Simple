@@ -22,10 +22,10 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
 }) => {
   const dispatch = useAppDispatch();
   const { history, selectedAnnotationId } = useAppSelector(state => state.annotation);
-  const { currentPage, scale } = useAppSelector(state => state.pdf);
+  const { currentPage } = useAppSelector(state => state.pdf);
   const { activeTool } = useAppSelector(state => state.annotation);
   const layerRef = useRef<HTMLDivElement>(null);
-  
+
   // Use props if provided, otherwise use data from the Redux store
   const annotations = currentPageAnnotations || history.present.filter(
     annotation => annotation.pageNumber === currentPage
@@ -37,13 +37,13 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
     // this is a background click, so clear the selection and trigger the callback
     if (e.target === e.currentTarget) {
       dispatch(setSelectedAnnotationId(null));
-      
+
       // If there's a click callback provided, call it
       if (onAnnotationLayerClick) {
         onAnnotationLayerClick(e);
       }
     }
-    
+
     // Set appropriate cursor based on active tool
     if (activeTool === 'text') {
       document.body.style.cursor = 'text'; // Text insertion cursor
@@ -68,19 +68,18 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
   return (
     <div
       className="absolute inset-0"
-      style={{ transform: `scale(${scale})`, transformOrigin: 'top left', pointerEvents: 'none' }}
+      style={{ transform: `scale(${1})`, transformOrigin: 'top left', pointerEvents: 'all' }}
     >
-      <div 
+      <div
         ref={layerRef}
-        className="relative w-full h-full" 
-        style={getPointerEventsStyle()} 
+        className="relative w-full h-full"
         onClick={handleClick}
       >
         {/* Render all annotations for current page */}
         {annotations.map((annotation) => {
           // Check if annotation is selected
           const isSelected = selectedAnnotationIdToUse === annotation.id;
-          
+
           if (annotation.type === 'text') {
             return (
               <TextAnnotation
@@ -91,11 +90,7 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
             );
           } else if (annotation.type === 'drawing') {
             return (
-              <DrawingCanvas
-                key={annotation.id}
-                drawingAnnotation={annotation as DrawingAnnotation}
-                isSelected={isSelected}
-              />
+              <></>
             );
           } else if (annotation.type === 'signature') {
             return (
@@ -114,7 +109,7 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
               />
             );
           }
-          
+
           return null;
         })}
       </div>

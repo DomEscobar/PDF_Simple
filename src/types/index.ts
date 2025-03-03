@@ -75,5 +75,4 @@ export type PDFDocument = {
   name: string;
   totalPages: number;
   currentPage: number;
-  scale: number;
 };

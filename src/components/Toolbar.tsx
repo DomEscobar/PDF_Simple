@@ -1,4 +1,4 @@
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
   setActiveTool,
@@ -29,8 +29,6 @@ import {
   FileText,
   Trash,
   Type,
-  Palette,
-  AlignLeft,
   Image
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -50,9 +48,9 @@ const Toolbar: React.FC = () => {
   const [signaturePath, setSignaturePath] = useState<Position[]>([]);
   const [showFontOptions, setShowFontOptions] = useState(false);
 
-  const selectedAnnotation = selectedAnnotationId ? 
+  const selectedAnnotation = selectedAnnotationId ?
     history.present.find(ann => ann.id === selectedAnnotationId) : null;
-  const selectedTextAnnotation = selectedAnnotation?.type === 'text' ? 
+  const selectedTextAnnotation = selectedAnnotation?.type === 'text' ?
     selectedAnnotation as TextAnnotation : null;
 
   const colorOptions = [
@@ -72,10 +70,21 @@ const Toolbar: React.FC = () => {
   ];
 
   const fontSizeOptions = [
+    { value: 8, label: '8px' },
+    { value: 9, label: '9px' },
+    { value: 10, label: '10px' },
+    { value: 11, label: '11px' },
+    { value: 12, label: '12px' },
+    { value: 10, label: '9px' },
+    { value: 10, label: '10px' },
+    { value: 11, label: '11px' },
     { value: 12, label: '12px' },
     { value: 16, label: '16px' },
     { value: 20, label: '20px' },
     { value: 24, label: '24px' },
+    { value: 32, label: '32px' },
+    { value: 48, label: '48px' },
+    { value: 64, label: '64px' },
   ];
 
   const thicknessOptions = [
@@ -139,20 +148,20 @@ const Toolbar: React.FC = () => {
     }
 
     const imageUrl = URL.createObjectURL(file);
-    
+
     const img = new window.Image();
     img.onload = () => {
       const aspectRatio = img.width / img.height;
       const width = Math.min(300, img.width);
       const height = width / aspectRatio;
-      
+
       dispatch(createImageAnnotation({
         position: { x: 100, y: 100 },
         size: { width, height },
         url: imageUrl,
         pageNumber: currentPage
       }));
-      
+
       toast.success('Image added to document');
     };
     img.src = imageUrl;
@@ -168,17 +177,17 @@ const Toolbar: React.FC = () => {
 
   const handleSignatureStart = (e: React.MouseEvent) => {
     if (!signatureCanvasRef.current) return;
-    
+
     const canvas = signatureCanvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const point: Position = {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     };
-    
+
     setIsDrawingSignature(true);
     setSignaturePath([point]);
-    
+
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.beginPath();
@@ -192,16 +201,16 @@ const Toolbar: React.FC = () => {
 
   const handleSignatureMove = (e: React.MouseEvent) => {
     if (!isDrawingSignature || !signatureCanvasRef.current) return;
-    
+
     const canvas = signatureCanvasRef.current;
     const rect = canvas.getBoundingClientRect();
     const point: Position = {
       x: e.clientX - rect.left,
       y: e.clientY - rect.top,
     };
-    
+
     setSignaturePath(prev => [...prev, point]);
-    
+
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.lineTo(point.x, point.y);
@@ -219,14 +228,14 @@ const Toolbar: React.FC = () => {
       toast.error('Please draw a signature');
       return;
     }
-    
+
     dispatch(createSignatureAnnotation({
       position: { x: 100, y: 100 },
       size: { width: 300, height: 150 },
       path: signaturePath,
       pageNumber: currentPage
     }));
-    
+
     setIsSignatureMode(false);
     setSignaturePath([]);
     toast.success('Signature added to document');
@@ -234,13 +243,13 @@ const Toolbar: React.FC = () => {
 
   const clearSignature = useCallback(() => {
     if (!signatureCanvasRef.current) return;
-    
+
     const canvas = signatureCanvasRef.current;
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
-    
+
     setSignaturePath([]);
   }, []);
 
@@ -251,12 +260,12 @@ const Toolbar: React.FC = () => {
 
   const renderSignatureModal = () => {
     if (!isSignatureMode) return null;
-    
+
     return (
       <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
         <div className="panel-glass p-6 w-full max-w-lg">
           <h3 className="text-lg font-medium mb-4 text-center">Draw Your Signature</h3>
-          
+
           <div className="bg-white rounded-lg border border-editor-border mb-4 overflow-hidden">
             <canvas
               ref={signatureCanvasRef}
@@ -269,7 +278,7 @@ const Toolbar: React.FC = () => {
               onMouseLeave={handleSignatureEnd}
             />
           </div>
-          
+
           <div className="flex gap-3 justify-center">
             <button
               onClick={clearSignature}
@@ -297,25 +306,27 @@ const Toolbar: React.FC = () => {
   };
 
   const renderTextAnnotationOptions = () => {
-    if (!selectedTextAnnotation || activeTool !== 'select') return null;
-    
+    if (!selectedTextAnnotation || activeTool !== 'text') return null;
+
     return (
-      <div className="bg-white text-gray-800 py-2 px-4 border-b border-editor-border flex items-center gap-4 shadow-sm animate-slide-up">
+      <div tabIndex={0} onClick={(e) => {
+        e.stopPropagation();
+      }} className="bg-white text-gray-800 py-2 px-4 border-b border-editor-border flex items-center gap-4 shadow-sm animate-slide-up text-toolbar"
+      >
         <div className="relative">
           <ActionButton
             onClick={() => setShowFontOptions(!showFontOptions)}
             icon={<Type size={18} />}
             tooltip="Font Family"
           />
-          
+
           {showFontOptions && (
             <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-lg border border-editor-border w-32 z-20 animate-scale-in">
               {fontFamilyOptions.map(font => (
                 <div
                   key={font.value}
-                  className={`px-3 py-2 cursor-pointer hover:bg-gray-100 rounded ${
-                    selectedTextAnnotation.fontFamily === font.value ? 'bg-primary/10 text-primary' : ''
-                  }`}
+                  className={`px-3 py-2 cursor-pointer hover:bg-gray-100 rounded ${selectedTextAnnotation.fontFamily === font.value ? 'bg-primary/10 text-primary' : ''
+                    }`}
                   onClick={() => handleFontFamilyChange(font.value as FontFamily)}
                 >
                   <span className={`font-${font.value}`}>{font.label}</span>
@@ -324,7 +335,7 @@ const Toolbar: React.FC = () => {
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">Size:</span>
           <select
@@ -339,16 +350,15 @@ const Toolbar: React.FC = () => {
             ))}
           </select>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <span className="text-sm text-gray-500">Color:</span>
           <div className="flex gap-1">
             {colorOptions.map(color => (
               <div
                 key={color}
-                className={`w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform ${
-                  selectedTextAnnotation.color === color ? 'ring-2 ring-offset-1 ring-primary' : ''
-                }`}
+                className={`w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform ${selectedTextAnnotation.color === color ? 'ring-2 ring-offset-1 ring-primary' : ''
+                  }`}
                 style={{ backgroundColor: color }}
                 onClick={() => handleTextColorChange(color)}
               />
@@ -395,7 +405,7 @@ const Toolbar: React.FC = () => {
             tooltip="Export PDF"
           />
         </div>
-        
+
         <div className="flex items-center gap-2 border-r border-editor-border pr-2">
           <ActionButton
             onClick={() => window.zoomOutDom && window.zoomOutDom()}
@@ -408,10 +418,9 @@ const Toolbar: React.FC = () => {
             tooltip="Zoom In"
           />
         </div>
-        
+
         <div className="flex items-center gap-2 border-r border-editor-border pr-2">
           <div className="flex items-center">
-            <span className="text-xs font-medium mr-2 text-gray-600">Mode:</span>
             <ActionButton
               onClick={() => dispatch(setActiveTool('select'))}
               icon={<TextCursor size={18} />}
@@ -442,53 +451,41 @@ const Toolbar: React.FC = () => {
               active={activeTool === 'draw'}
               tooltip={getToolDescription('draw')}
             />
-            
+
             {showColorPicker && (
-              <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-lg border border-editor-border grid grid-cols-3 gap-2 z-20 animate-scale-in">
-                {colorOptions.map(color => (
-                  <div
-                    key={color}
-                    className={`color-option ${selectedColor === color ? 'selected' : ''}`}
-                    style={{ backgroundColor: color, borderColor: color === '#ffffff' ? '#e2e8f0' : color }}
-                    onClick={() => dispatch(setSelectedColor(color))}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="relative">
-            <ActionButton
-              onClick={() => {
-                setShowLineThickness(!showLineThickness);
-                setShowColorPicker(false);
-                setShowFontOptions(false);
-              }}
-              icon={<Highlighter size={18} />}
-              active={showLineThickness}
-              tooltip="Line Thickness"
-            />
-            
-            {showLineThickness && (
-              <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-lg border border-editor-border flex flex-col gap-2 z-20 animate-scale-in">
-                {thicknessOptions.map(option => (
-                  <div
-                    key={option.value}
-                    className={`thickness-option ${lineThickness === option.value ? 'selected' : ''}`}
-                    onClick={() => dispatch(setLineThickness(option.value as any))}
-                  >
+              <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-lg border border-editor-border  z-10 text-centerz-20 animate-scale-in" style={{ width: '120px' }}>
+                <div className=' grid grid-cols-3 gap-2 '>
+                  {colorOptions.map(color => (
                     <div
-                      className="rounded-full bg-current"
-                      style={{
-                        width: option.value === 'thin' ? '4px' : option.value === 'medium' ? '8px' : '12px',
-                        height: option.value === 'thin' ? '4px' : option.value === 'medium' ? '8px' : '12px',
-                      }}
+                      key={color}
+                      className={`color-option ${selectedColor === color ? 'selected' : ''}`}
+                      style={{ backgroundColor: color, borderColor: color === '#ffffff' ? '#e2e8f0' : color }}
+                      onClick={() => dispatch(setSelectedColor(color))}
                     />
-                  </div>
-                ))}
+                  ))}
+                </div>
+                <hr className='my-2' />
+                <div className='flex gap-2 items-center'>
+                  {thicknessOptions.map(option => (
+                    <div
+                      key={option.value}
+                      className={`thickness-option ${lineThickness === option.value ? 'selected' : ''}`}
+                      onClick={() => dispatch(setLineThickness(option.value as any))}
+                    >
+                      <div
+                        className="rounded-full bg-current"
+                        style={{
+                          width: option.value === 'thin' ? '4px' : option.value === 'medium' ? '8px' : '12px',
+                          height: option.value === 'thin' ? '4px' : option.value === 'medium' ? '8px' : '12px',
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-          <ActionButton
+          {/* <ActionButton
             onClick={() => {
               setIsSignatureMode(true);
               setShowColorPicker(false);
@@ -497,8 +494,8 @@ const Toolbar: React.FC = () => {
             }}
             icon={<Signature size={18} />}
             tooltip="Add Signature"
-          />
-          
+          /> */}
+
           <div>
             <input
               type="file"
@@ -514,7 +511,7 @@ const Toolbar: React.FC = () => {
             />
           </div>
         </div>
-        
+
         <div className="flex items-center gap-2">
           <ActionButton
             onClick={() => dispatch(undo())}
@@ -539,9 +536,9 @@ const Toolbar: React.FC = () => {
           />
         </div>
       </div>
-      
+
       {renderTextAnnotationOptions()}
-      
+
       {renderSignatureModal()}
     </>
   );

@@ -6,8 +6,7 @@ const initialState: PDFDocument = {
   url: '',
   name: '',
   totalPages: 0,
-  currentPage: 1,
-  scale: 1.0,
+  currentPage: 1
 };
 
 const pdfSlice = createSlice({
@@ -35,16 +34,7 @@ const pdfSlice = createSlice({
       if (state.currentPage > 1) {
         state.currentPage -= 1;
       }
-    },
-    setScale: (state, action: PayloadAction<number>) => {
-      state.scale = action.payload;
-    },
-    zoomIn: (state) => {
-      state.scale = Math.min(state.scale + 0.1, 3.0);
-    },
-    zoomOut: (state) => {
-      state.scale = Math.max(state.scale - 0.1, 0.5);
-    },
+    }
   },
 });
 
@@ -54,9 +44,6 @@ export const {
   setCurrentPage,
   nextPage,
   previousPage,
-  setScale,
-  zoomIn,
-  zoomOut,
 } = pdfSlice.actions;
 
 export const pdfReducer = pdfSlice.reducer;
