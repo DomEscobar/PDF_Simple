@@ -27,42 +27,61 @@ const PDFViewer: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [domScale, setDomScale] = useState(1.0);
-
-  // Direct DOM-based zoom functions
+  
+  // Pure DOM-based zoom functions without state updates
   const zoomInDom = () => {
-    if (!pdfContainerRef.current) return;
-    const newScale = Math.min(domScale + 0.1, 3.0);
-    setDomScale(newScale);
+    if (!pdfContainerRef.current || !containerRef.current) return;
     
-    // Apply scale transform to the PDF container
+    // Get current scale from transform property or default to 1
+    const currentTransform = pdfContainerRef.current.style.transform;
+    let currentScale = 1.0;
+    
+    if (currentTransform) {
+      const match = currentTransform.match(/scale\(([^)]+)\)/);
+      if (match && match[1]) {
+        currentScale = parseFloat(match[1]);
+      }
+    }
+    
+    // Calculate new scale (max 3.0)
+    const newScale = Math.min(currentScale + 0.1, 3.0);
+    
+    // Apply scale transform directly to the PDF container
     pdfContainerRef.current.style.transform = `scale(${newScale})`;
     pdfContainerRef.current.style.transformOrigin = 'top center';
     
     // Adjust container height to compensate for scaling
-    if (containerRef.current) {
-      const newHeight = pdfContainerRef.current.scrollHeight * newScale;
-      containerRef.current.style.height = `${newHeight}px`;
-    }
+    const newHeight = pdfContainerRef.current.scrollHeight * newScale;
+    containerRef.current.style.height = `${newHeight}px`;
   };
 
   const zoomOutDom = () => {
-    if (!pdfContainerRef.current) return;
-    const newScale = Math.max(domScale - 0.1, 0.5);
-    setDomScale(newScale);
+    if (!pdfContainerRef.current || !containerRef.current) return;
     
-    // Apply scale transform to the PDF container
+    // Get current scale from transform property or default to 1
+    const currentTransform = pdfContainerRef.current.style.transform;
+    let currentScale = 1.0;
+    
+    if (currentTransform) {
+      const match = currentTransform.match(/scale\(([^)]+)\)/);
+      if (match && match[1]) {
+        currentScale = parseFloat(match[1]);
+      }
+    }
+    
+    // Calculate new scale (min 0.5)
+    const newScale = Math.max(currentScale - 0.1, 0.5);
+    
+    // Apply scale transform directly to the PDF container
     pdfContainerRef.current.style.transform = `scale(${newScale})`;
     pdfContainerRef.current.style.transformOrigin = 'top center';
     
     // Adjust container height to compensate for scaling
-    if (containerRef.current) {
-      const newHeight = pdfContainerRef.current.scrollHeight * newScale;
-      containerRef.current.style.height = `${newHeight}px`;
-    }
+    const newHeight = pdfContainerRef.current.scrollHeight * newScale;
+    containerRef.current.style.height = `${newHeight}px`;
   };
 
-  // Make these zoom functions available globally for the toolbar to use
+  // Make zoom functions available globally
   useEffect(() => {
     window.zoomInDom = zoomInDom;
     window.zoomOutDom = zoomOutDom;
@@ -72,22 +91,19 @@ const PDFViewer: React.FC = () => {
       delete window.zoomInDom;
       delete window.zoomOutDom;
     };
-  }, [domScale]);
+  }, []);
 
-  // Apply DOM-based zoom effect on initial load and when PDF changes
+  // Apply initial transform when PDF is loaded
   useEffect(() => {
-    if (!pdfContainerRef.current) return;
+    if (!pdfContainerRef.current || !containerRef.current || isLoading) return;
     
-    // Apply scale transform to the PDF container
-    pdfContainerRef.current.style.transform = `scale(${domScale})`;
+    // Initialize with scale 1
+    pdfContainerRef.current.style.transform = 'scale(1)';
     pdfContainerRef.current.style.transformOrigin = 'top center';
     
-    // Adjust container height to compensate for scaling
-    if (containerRef.current) {
-      const newHeight = pdfContainerRef.current.scrollHeight * domScale;
-      containerRef.current.style.height = `${newHeight}px`;
-    }
-  }, [domScale, url, isLoading]);
+    // Set initial container height
+    containerRef.current.style.height = `${pdfContainerRef.current.scrollHeight}px`;
+  }, [url, isLoading]);
 
   // Make text elements editable after PDF rendering
   useEffect(() => {
