@@ -48,13 +48,12 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (activeTool !== 'select' && activeTool !== 'text') return;
-    
+    // We want to handle mouse down regardless of the active tool
     e.stopPropagation();
     dispatch(setSelectedAnnotationId(annotation.id));
 
-    // Don't start dragging if we're in text tool mode
-    if (activeTool === 'select') {
+    // Allow dragging if we're in text or select tool mode
+    if (activeTool === 'select' || activeTool === 'text') {
       setIsDragging(true);
       setDragOffset({
         x: e.clientX - (annotation.position.x * scale),
@@ -64,7 +63,7 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
   };
 
   const handleResizeStart = (e: React.MouseEvent, direction: string) => {
-    if (activeTool !== 'select') return;
+    if (activeTool !== 'select' && activeTool !== 'text') return;
     
     e.stopPropagation();
     setIsResizing(true);
@@ -203,11 +202,10 @@ const TextAnnotation: React.FC<TextAnnotationProps> = ({ annotation, isSelected 
         }}
         onClick={(e) => {
           e.stopPropagation();
-          dispatch(setSelectedAnnotationId(annotation.id));
         }}
       />
       
-      {isSelected && activeTool === 'select' && (
+      {isSelected && (activeTool === 'select' || activeTool === 'text') && (
         <>
           <div className="absolute w-3 h-3 bg-primary rounded-full border border-white top-0 left-0 -translate-x-1/2 -translate-y-1/2 cursor-nw-resize" 
                onMouseDown={(e) => handleResizeStart(e, 'nw')} />

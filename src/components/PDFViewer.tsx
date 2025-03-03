@@ -1,10 +1,11 @@
+
 import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
 import 'react-pdf/dist/esm/Page/TextLayer.css';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { setTotalPages, loadPDF } from '@/store/slices/pdfSlice';
-import { setIsDrawing, createTextAnnotation, setActiveTool, setSelectedAnnotationId } from '@/store/slices/annotationSlice';
+import { setIsDrawing, createTextAnnotation, setSelectedAnnotationId } from '@/store/slices/annotationSlice';
 import DrawingCanvas from './DrawingCanvas';
 import { Position } from '@/types';
 import { toast } from 'sonner';
@@ -104,6 +105,7 @@ const PDFViewer: React.FC = () => {
     const target = e.target as HTMLElement;
     const isAnnotationClick = target.closest('.annotation-element') !== null;
     
+    // Don't deselect when clicking on annotations
     if (!isAnnotationClick) {
       dispatch(setSelectedAnnotationId(null));
     }
@@ -111,6 +113,7 @@ const PDFViewer: React.FC = () => {
     if (activeTool === 'draw') {
       document.body.style.cursor = 'crosshair';
     } else if (activeTool === 'text' && !isAnnotationClick) {
+      // Only create a new text annotation if we didn't click on an existing annotation
       const rect = containerRef.current.getBoundingClientRect();
       const position: Position = {
         x: (e.clientX - rect.left) / scale,
@@ -125,8 +128,6 @@ const PDFViewer: React.FC = () => {
         color: '#000000'
       }));
       
-      document.body.style.cursor = 'text';
-    } else if (activeTool === 'select') {
       document.body.style.cursor = 'text';
     }
   };

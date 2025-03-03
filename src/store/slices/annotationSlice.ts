@@ -103,14 +103,12 @@ const annotationSlice = createSlice({
       .addCase(setActiveTool, (state, action: PayloadAction<AnnotationState['activeTool']>) => {
         state.activeTool = action.payload;
       })
-      // Handle selected annotation
+      // Handle selected annotation - MODIFIED to not switch the tool
       .addCase(setSelectedAnnotationId, (state, action: PayloadAction<string | null>) => {
         state.selectedAnnotationId = action.payload;
         
-        // If selecting an annotation, automatically switch to select tool
-        if (action.payload !== null) {
-          state.activeTool = 'select';
-        }
+        // We're no longer switching to select tool when an annotation is selected
+        // This allows us to stay in text mode when working with text annotations
       })
       // Handle selected color
       .addCase(setSelectedColor, (state, action: PayloadAction<Color>) => {
@@ -253,7 +251,7 @@ const annotationSlice = createSlice({
           future: [],
         };
       })
-      // Handle text annotation creation - remove automatic tool switching
+      // Handle text annotation creation - MODIFIED to not switch the tool
       .addCase(createTextAnnotation, (state, action) => {
         const { 
           position, 
@@ -288,6 +286,7 @@ const annotationSlice = createSlice({
             future: [],
           },
           selectedAnnotationId: newAnnotation.id,
+          // We're not changing the activeTool here to stay in text mode
         };
       })
       
