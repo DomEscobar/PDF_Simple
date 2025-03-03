@@ -18,14 +18,30 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/$
 
 const PDFViewer: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { url, currentPage, totalPages, scale } = useAppSelector(state => state.pdf);
+  const { url, currentPage, totalPages, scale, domScale } = useAppSelector(state => state.pdf);
   const { activeTool, selectedAnnotationId, history } = useAppSelector(state => state.annotation);
   const containerRef = useRef<HTMLDivElement>(null);
+  const pdfContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pageSizes, setPageSizes] = useState<{ width: number; height: number }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<Error | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+
+  // Apply DOM-based zoom effect
+  useEffect(() => {
+    if (!pdfContainerRef.current) return;
+    
+    // Apply scale transform to the PDF container
+    pdfContainerRef.current.style.transform = `scale(${domScale})`;
+    pdfContainerRef.current.style.transformOrigin = 'top center';
+    
+    // Adjust container height to compensate for scaling
+    if (containerRef.current) {
+      const newHeight = pdfContainerRef.current.scrollHeight * domScale;
+      containerRef.current.style.height = `${newHeight}px`;
+    }
+  }, [domScale]);
 
   // Make text elements editable after PDF rendering
   useEffect(() => {
@@ -179,7 +195,7 @@ const PDFViewer: React.FC = () => {
   return (
     <div 
       ref={containerRef}
-      className="pdf-container"
+      className="pdf-container overflow-auto"
       onClick={handlePDFClick}
     >
       {/* Show upload zone if no PDF is loaded */}
@@ -194,7 +210,10 @@ const PDFViewer: React.FC = () => {
 
       {/* Render PDF document */}
       {url && (
-        <div className="relative flex flex-col items-center space-y-6 py-6">
+        <div 
+          ref={pdfContainerRef}
+          className="relative flex flex-col items-center space-y-6 py-6 transition-transform"
+        >
           <Document
             file={url}
             onLoadSuccess={handleDocumentLoadSuccess}
