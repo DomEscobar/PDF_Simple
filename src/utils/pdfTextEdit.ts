@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for making PDF text elements editable
  */
@@ -24,6 +25,40 @@ export const makeTextElementsEditable = (containerRef: React.RefObject<HTMLDivEl
 
   // Add more CSS for the editable text
   addEditableTextStyles();
+};
+
+// Enable text layer interactivity for editing
+export const enableTextLayerEditing = (containerRef: React.RefObject<HTMLDivElement>) => {
+  if (!containerRef.current) return;
+  
+  // Enable the text layers
+  const textLayers = containerRef.current.querySelectorAll('.react-pdf__Page__textContent, .textLayer');
+  textLayers.forEach((layer) => {
+    (layer as HTMLElement).style.pointerEvents = 'auto';
+  });
+  
+  // Also enable all the editable text elements
+  const editableTexts = containerRef.current.querySelectorAll('.pdf-editable-text');
+  editableTexts.forEach((text) => {
+    (text as HTMLElement).style.pointerEvents = 'auto';
+  });
+};
+
+// Disable text layer interactivity
+export const disableTextLayerEditing = (containerRef: React.RefObject<HTMLDivElement>) => {
+  if (!containerRef.current) return;
+  
+  // Disable the text layers
+  const textLayers = containerRef.current.querySelectorAll('.react-pdf__Page__textContent, .textLayer');
+  textLayers.forEach((layer) => {
+    (layer as HTMLElement).style.pointerEvents = 'none';
+  });
+  
+  // Also disable all the editable text elements
+  const editableTexts = containerRef.current.querySelectorAll('.pdf-editable-text');
+  editableTexts.forEach((text) => {
+    (text as HTMLElement).style.pointerEvents = 'none';
+  });
 };
 
 // Handle focus on text element

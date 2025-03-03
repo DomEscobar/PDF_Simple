@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/esm/Page/AnnotationLayer.css';
@@ -9,7 +8,7 @@ import { setIsDrawing, createTextAnnotation, setSelectedAnnotationId } from '@/s
 import DrawingCanvas from './DrawingCanvas';
 import { Position } from '@/types';
 import { toast } from 'sonner';
-import { makeTextElementsEditable } from '@/utils/pdfTextEdit';
+import { makeTextElementsEditable, enableTextLayerEditing, disableTextLayerEditing } from '@/utils/pdfTextEdit';
 import PDFLoadingStates from './PDFLoadingStates';
 import PDFAnnotationsLayer from './PDFAnnotationsLayer';
 import { FileUp, Upload } from 'lucide-react';
@@ -98,6 +97,26 @@ const PDFViewer: React.FC = () => {
 
     return () => clearTimeout(timeout);
   }, [url, isLoading, scale]);
+
+  useEffect(() => {
+    if (!url || isLoading) return;
+
+    const timeout = setTimeout(() => {
+      // First, make the text elements editable (regardless of mode)
+      makeTextElementsEditable(containerRef);
+      
+      // Then, enable or disable based on the current tool
+      if (activeTool === 'text') {
+        // In text editing mode, enable text layer interaction
+        enableTextLayerEditing(containerRef);
+      } else {
+        // In other modes (draw, select), disable text layer interaction
+        disableTextLayerEditing(containerRef);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
+  }, [url, isLoading, scale, activeTool]);
 
   const handlePDFClick = (e: React.MouseEvent) => {
     if (!containerRef.current) return;
@@ -207,10 +226,22 @@ const PDFViewer: React.FC = () => {
   useEffect(() => {
     if (activeTool === 'text') {
       document.body.style.cursor = 'text';
+      // Enable text layer when switching to text tool
+      if (containerRef.current) {
+        enableTextLayerEditing(containerRef);
+      }
     } else if (activeTool === 'draw') {
       document.body.style.cursor = 'crosshair';
+      // Disable text layer when switching to draw tool
+      if (containerRef.current) {
+        disableTextLayerEditing(containerRef);
+      }
     } else {
       document.body.style.cursor = 'default';
+      // Disable text layer editability but keep interactivity for selection
+      if (containerRef.current) {
+        disableTextLayerEditing(containerRef);
+      }
     }
   }, [activeTool]);
 
