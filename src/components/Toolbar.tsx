@@ -531,11 +531,6 @@ const Toolbar: React.FC = () => {
             className="hidden"
           />
           <ActionButton
-            onClick={() => fileInputRef.current?.click()}
-            icon={<FileUp size={18} />}
-            tooltip="Open PDF"
-          />
-          <ActionButton
             onClick={handleExportPDF}
             icon={<FileDown size={18} />}
             tooltip="Export PDF"

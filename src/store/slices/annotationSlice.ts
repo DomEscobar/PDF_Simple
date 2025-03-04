@@ -20,8 +20,8 @@ interface AnnotationState {
 const initialState: AnnotationState = {
   activeTool: 'select',
   selectedAnnotationId: null,
-  selectedColor: '#1e88e5', // Default blue color
-  lineThickness: 'medium', // Default medium thickness
+  selectedColor: '#000000', // Default blue color
+  lineThickness: 'thin', // Default medium thickness
   isDrawing: false,
   currentPath: undefined,
   history: {
