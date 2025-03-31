@@ -4,6 +4,8 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import PDFViewer from '@/components/PDFViewer';
 import Toolbar from '@/components/Toolbar';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
+import PDFSidebar from '@/components/PDFSidebar';
 
 const PDFEditorApp: React.FC = () => {
   // Listen for keyboard shortcuts for undo/redo
@@ -27,9 +29,11 @@ const PDFEditorApp: React.FC = () => {
   }, []);
 
   return (
-    <div className="editor-wrapper">
+    <div className="editor-wrapper w-full">
       <Toolbar />
-      <PDFViewer />
+      <div className="flex-1 overflow-hidden">
+        <PDFViewer />
+      </div>
     </div>
   );
 };
@@ -37,11 +41,19 @@ const PDFEditorApp: React.FC = () => {
 const Index: React.FC = () => {
   return (
     <Provider store={store}>
-      <div className="w-full h-screen flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-hidden">
-          <PDFEditorApp />
-        </main>
-      </div>
+      <SidebarProvider defaultOpen={false}>
+        <div className="w-full h-screen flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-hidden flex w-full">
+            <PDFSidebar />
+            <SidebarInset className="flex flex-col">
+              <div className="absolute top-2 left-2 z-10">
+                <SidebarTrigger className="bg-white/80 backdrop-blur-sm shadow-md" />
+              </div>
+              <PDFEditorApp />
+            </SidebarInset>
+          </div>
+        </div>
+      </SidebarProvider>
     </Provider>
   );
 };
