@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import {
   Undo,
@@ -18,9 +19,9 @@ import {
   setActiveTool,
   setColor,
   setLineThickness,
+  setFontFamily,
   undo,
   redo,
-  setFontFamily,
 } from '@/store/slices/annotationSlice';
 import { Color, LineThickness, ToolType, FontFamily } from '@/types';
 import { toast } from '@/components/ui/use-toast';
