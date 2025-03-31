@@ -1,4 +1,3 @@
-
 import { createSlice, PayloadAction, createAction } from '@reduxjs/toolkit';
 import { v4 as uuidv4 } from 'uuid';
 import { Position, Color, LineThickness, Annotation, EditorHistory, TextAnnotation, DrawingAnnotation, SignatureAnnotation, FontFamily, ImageAnnotation } from '@/types';
@@ -7,9 +6,8 @@ import { Position, Color, LineThickness, Annotation, EditorHistory, TextAnnotati
 interface AnnotationState {
   activeTool: 'select' | 'text' | 'draw' | 'signature' | 'eraser' | 'image';
   selectedAnnotationId: string | null;
-  color: Color; // Changed from selectedColor to color for consistency
+  selectedColor: Color;
   lineThickness: LineThickness;
-  fontFamily: FontFamily; // Added fontFamily to state
   isDrawing: boolean;
   currentPath: {
     points: Position[];
@@ -22,9 +20,8 @@ interface AnnotationState {
 const initialState: AnnotationState = {
   activeTool: 'select',
   selectedAnnotationId: null,
-  color: '#000000', // Default color
+  selectedColor: '#000000', // Default blue color
   lineThickness: 'thin', // Default medium thickness
-  fontFamily: 'sans', // Default font family
   isDrawing: false,
   currentPath: undefined,
   history: {
@@ -40,14 +37,11 @@ export const setActiveTool = createAction<AnnotationState['activeTool']>('annota
 // Action to set the selected annotation
 export const setSelectedAnnotationId = createAction<string | null>('annotation/setSelectedAnnotationId');
 
-// Action to set the color
-export const setColor = createAction<Color>('annotation/setColor');
+// Action to set the selected color
+export const setSelectedColor = createAction<Color>('annotation/setSelectedColor');
 
 // Action to set the line thickness
 export const setLineThickness = createAction<LineThickness>('annotation/setLineThickness');
-
-// Action to set the font family
-export const setFontFamily = createAction<FontFamily>('annotation/setFontFamily');
 
 // Action to start drawing
 export const setIsDrawing = createAction<boolean>('annotation/setIsDrawing');
@@ -116,17 +110,13 @@ const annotationSlice = createSlice({
         // We're no longer switching to select tool when an annotation is selected
         // This allows us to stay in text mode when working with text annotations
       })
-      // Handle color
-      .addCase(setColor, (state, action: PayloadAction<Color>) => {
-        state.color = action.payload;
+      // Handle selected color
+      .addCase(setSelectedColor, (state, action: PayloadAction<Color>) => {
+        state.selectedColor = action.payload;
       })
       // Handle line thickness
       .addCase(setLineThickness, (state, action: PayloadAction<LineThickness>) => {
         state.lineThickness = action.payload;
-      })
-      // Handle font family
-      .addCase(setFontFamily, (state, action: PayloadAction<FontFamily>) => {
-        state.fontFamily = action.payload;
       })
       // Handle drawing state
       .addCase(setIsDrawing, (state, action: PayloadAction<boolean>) => {
@@ -136,7 +126,7 @@ const annotationSlice = createSlice({
         if (action.payload && !state.currentPath) {
           state.currentPath = {
             points: [],
-            color: state.color,
+            color: state.selectedColor,
             thickness: state.lineThickness === 'thin' ? 2 : state.lineThickness === 'medium' ? 5 : 8,
           };
         }
@@ -151,7 +141,7 @@ const annotationSlice = createSlice({
           // Start a new path
           state.currentPath = {
             points: [{ x, y }],
-            color: state.color,
+            color: state.selectedColor,
             thickness: state.lineThickness === 'thin' ? 2 : state.lineThickness === 'medium' ? 5 : 8,
           };
         } else {
@@ -267,9 +257,9 @@ const annotationSlice = createSlice({
           position, 
           content = '', 
           pageNumber, 
-          fontFamily = state.fontFamily,
+          fontFamily = 'sans',
           fontSize = 11,
-          color = state.color
+          color = '#000000'
         } = action.payload;
         
         const newAnnotation: TextAnnotation = {

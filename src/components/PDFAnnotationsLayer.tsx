@@ -98,8 +98,6 @@ const PDFAnnotationsLayer: React.FC<PDFAnnotationsLayerProps> = ({
                 key={annotation.id}
                 annotation={annotation}
                 isSelected={isSelected}
-                onSave={() => {}}
-                onCancel={() => {}}
               />
             );
           } else if (annotation.type === 'image') {
