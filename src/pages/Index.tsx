@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import PDFViewer from '@/components/PDFViewer';
 import Toolbar from '@/components/Toolbar';
+import Sidebar from '@/components/Sidebar';
 
 const PDFEditorApp: React.FC = () => {
   // Listen for keyboard shortcuts for undo/redo
@@ -38,8 +39,11 @@ const Index: React.FC = () => {
   return (
     <Provider store={store}>
       <div className="w-full h-screen flex flex-col overflow-hidden">
-        <main className="flex-1 overflow-hidden">
-          <PDFEditorApp />
+        <main className="flex-1 overflow-hidden flex">
+          <div className="flex-1">
+            <PDFEditorApp />
+          </div>
+          <Sidebar />
         </main>
       </div>
     </Provider>

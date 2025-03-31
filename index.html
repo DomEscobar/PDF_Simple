@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -7,6 +8,14 @@
     <meta name="description" content="Lovable Generated Project" />
     <meta name="author" content="Lovable" />
     <meta property="og:image" content="/og-image.png" />
+    <!-- Add html2canvas and jsPDF scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+      // Make libraries available on window object
+      window.html2canvas = html2canvas;
+      window.jspdf = jspdf;
+    </script>
   </head>
 
   <body>

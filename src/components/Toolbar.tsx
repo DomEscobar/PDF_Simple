@@ -1,675 +1,317 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useState, useCallback } from 'react';
+import {
+  Undo,
+  Redo,
+  TextCursor,
+  Pencil,
+  Eraser,
+  Save,
+  Download,
+  Signature,
+  ImageIcon,
+  ArrowLeftRight,
+  X,
+} from 'lucide-react';
+import { SketchPicker } from 'react-color';
 import { useAppDispatch, useAppSelector } from '@/store';
 import {
   setActiveTool,
-  setSelectedColor,
+  setColor,
   setLineThickness,
   undo,
   redo,
-  clearAnnotations,
-  createSignatureAnnotation,
-  updateAnnotation,
-  createImageAnnotation
+  setFontFamily,
 } from '@/store/slices/annotationSlice';
+import { Color, LineThickness, ToolType, FontFamily } from '@/types';
+import { toast } from '@/components/ui/use-toast';
 import {
-  loadPDF
-} from '@/store/slices/pdfSlice';
-import ActionButton from './ActionButton';
-import {
-  TextCursor,
-  FileDown,
-  FileUp,
-  Highlighter,
-  Pen,
-  Signature,
-  Redo2,
-  Undo2,
-  ZoomIn,
-  ZoomOut,
-  FileText,
-  Trash,
-  Type,
-  Image
-} from 'lucide-react';
-import { toast } from 'sonner';
-import { Position, FontFamily, TextAnnotation } from '@/types';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-import { scaleFactor } from './PDFViewer';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
+import { Slider } from "@/components/ui/slider"
+import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
-const Toolbar: React.FC = () => {
+interface ToolbarProps {
+  onFileChange: (file: File) => void;
+}
+
+const Toolbar: React.FC<ToolbarProps> = ({ onFileChange }) => {
   const dispatch = useAppDispatch();
-  const { activeTool, selectedColor, lineThickness, history, selectedAnnotationId } = useAppSelector(state => state.annotation);
-  const { currentPage } = useAppSelector(state => state.pdf);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const imageInputRef = useRef<HTMLInputElement>(null);
+  const { color, lineThickness, activeTool, fontFamily } = useAppSelector(state => state.annotation);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [showLineThickness, setShowLineThickness] = useState(false);
-  const [isSignatureMode, setIsSignatureMode] = useState(false);
-  const signatureCanvasRef = useRef<HTMLCanvasElement>(null);
-  const [isDrawingSignature, setIsDrawingSignature] = useState(false);
-  const [signaturePath, setSignaturePath] = useState<Position[]>([]);
-  const [showFontOptions, setShowFontOptions] = useState(false);
+  const [showThicknessPicker, setShowThicknessPicker] = useState(false);
+  const [fontSize, setFontSize] = useState(16); // Default font size
 
-  const selectedAnnotation = selectedAnnotationId ?
-    history.present.find(ann => ann.id === selectedAnnotationId) : null;
-  const selectedTextAnnotation = selectedAnnotation?.type === 'text' ?
-    selectedAnnotation as TextAnnotation : null;
+  const handleToolClick = (tool: ToolType) => {
+    dispatch(setActiveTool(tool));
+  };
 
-  const colorOptions = [
-    '#1e88e5', // blue
-    '#43a047', // green
-    '#e53935', // red
-    '#fb8c00', // orange
-    '#8e24aa', // purple
-    '#000000', // black
-  ];
+  const handleColorChange = (newColor: Color) => {
+    dispatch(setColor(newColor));
+  };
 
-  const fontFamilyOptions = [
-    { value: 'sans', label: 'Sans' },
-    { value: 'serif', label: 'Serif' },
-    { value: 'mono', label: 'Mono' },
-    { value: 'cursive', label: 'Cursive' },
-  ];
+  const handleThicknessChange = (thickness: LineThickness) => {
+    dispatch(setLineThickness(thickness));
+  };
 
-  const fontSizeOptions = [
-    { value: 8, label: '8px' },
-    { value: 9, label: '9px' },
-    { value: 10, label: '10px' },
-    { value: 11, label: '11px' },
-    { value: 12, label: '12px' },
-    { value: 10, label: '9px' },
-    { value: 10, label: '10px' },
-    { value: 11, label: '11px' },
-    { value: 12, label: '12px' },
-    { value: 16, label: '16px' },
-    { value: 20, label: '20px' },
-    { value: 24, label: '24px' },
-    { value: 32, label: '32px' },
-    { value: 48, label: '48px' },
-    { value: 64, label: '64px' },
-  ];
+  const handleUndo = () => {
+    dispatch(undo());
+  };
 
-  const thicknessOptions = [
-    { value: 'thin', label: 'Thin' },
-    { value: 'medium', label: 'Medium' },
-    { value: 'thick', label: 'Thick' },
-  ];
+  const handleRedo = () => {
+    dispatch(redo());
+  };
 
   const handleFontFamilyChange = (fontFamily: FontFamily) => {
-    if (selectedTextAnnotation) {
-      dispatch(updateAnnotation({
-        ...selectedTextAnnotation,
-        fontFamily
-      }));
-    }
+    dispatch(setFontFamily(fontFamily));
   };
 
-  const handleFontSizeChange = (fontSize: number) => {
-    if (selectedTextAnnotation) {
-      dispatch(updateAnnotation({
-        ...selectedTextAnnotation,
-        fontSize
-      }));
-    }
+  const handleFontSizeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFontSize(Number(e.target.value));
   };
 
-  const handleTextColorChange = (color: string) => {
-    if (selectedTextAnnotation) {
-      dispatch(updateAnnotation({
-        ...selectedTextAnnotation,
-        color
-      }));
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (file.type !== 'application/pdf') {
-      toast.error('Please select a PDF file');
-      return;
-    }
-
-    const fileUrl = URL.createObjectURL(file);
-    dispatch(loadPDF({ url: fileUrl, name: file.name }));
-    toast.success(`Loaded: ${file.name}`);
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      toast.error('Please select an image file');
-      return;
-    }
-
-    const imageUrl = URL.createObjectURL(file);
-
-    const img = new window.Image();
-    img.onload = () => {
-      const aspectRatio = img.width / img.height;
-      const width = Math.min(300, img.width);
-      const height = width / aspectRatio;
-
-      dispatch(createImageAnnotation({
-        position: { x: 100, y: 100 },
-        size: { width, height },
-        url: imageUrl,
-        pageNumber: currentPage
-      }));
-
-      toast.success('Image added to document');
-    };
-    img.src = imageUrl;
-
-    if (imageInputRef.current) {
-      imageInputRef.current.value = '';
+    if (file) {
+      onFileChange(file);
     }
   };
 
   const handleExportPDF = async () => {
     try {
-      // Check if there are pages to export
-      const pages = document.querySelectorAll('.doc-pages');
-      if (!pages || pages.length === 0) {
-        toast.error('No PDF pages found to export');
+      // Get the PDF container
+      const pdfContainer = document.querySelector('.pdf-container');
+      
+      if (!pdfContainer || typeof window.html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+        console.error('PDF export failed: Missing required elements or libraries');
+        toast({
+          title: 'Export failed',
+          description: 'There was an error exporting the PDF. Please try again.',
+          variant: 'destructive',
+        });
         return;
       }
-
-      toast.loading('Generating PDF...');
-
-      // Store original zoom level
-      const originalScaleFactor = scaleFactor;
-
-      // Temporarily reset zoom to 1 for consistent output
-      const documentContainer = document.querySelector('#pdf-container') as HTMLElement;
-      if (documentContainer) {
-        documentContainer.style.transform = 'scale(1.0)';
-        documentContainer.style.transformOrigin = 'top center';
-      }
-
-      // Let the DOM update before capturing
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // A4 dimensions in points (PDF unit): 595 x 842 points (72 points per inch)
-      const A4_WIDTH = 595;
-      const A4_HEIGHT = 842;
-
-      // Create a new PDF document
-      const pdf = new jsPDF({
+      
+      // Show loading toast
+      toast({
+        title: 'Exporting PDF',
+        description: 'Please wait while we generate your PDF...',
+      });
+      
+      // Convert the PDF container to a canvas
+      const canvas = await window.html2canvas(pdfContainer as HTMLElement, {
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
+        logging: false,
+      });
+      
+      // Create a new PDF
+      const pdf = new window.jspdf.jsPDF({
         orientation: 'portrait',
-        unit: 'pt',
-        format: [A4_WIDTH, A4_HEIGHT]
+        unit: 'mm',
       });
-
-      // PREPARE TEXT ELEMENTS: Fix the positioning of all editable text elements before capturing
-      const editableTextElements = document.querySelectorAll('.pdf-editable-text');
-      const originalStyles: { [key: string]: string } = {};
-
-      // Store original positions and apply absolute positioning
-      editableTextElements.forEach((element, index) => {
-        const el = element as HTMLElement;
-        const id = `text-export-${index}`;
-
-        // Store original styles
-        originalStyles[id] = el.style.cssText;
-
-        // Set element ID for restoration later
-        el.id = id;
-
-        // Ensure the text is positioned correctly during capture by fixing its position
-        el.style.position = 'absolute';
-        el.style.marginTop = '-0.5rem';
-        el.style.backgroundColor = 'transparent';
-      });
-
-      // Process each page individually
-      for (let i = 0; i < pages.length; i++) {
-        const page = pages[i] as HTMLElement;
-
-        // If not the first page, add a new page to PDF
-        if (i > 0) {
-          pdf.addPage([A4_WIDTH, A4_HEIGHT]);
-        }
-
-        // Capture the current page with html2canvas
-        const canvas = await html2canvas(page, {
-          scale: 3, // Increase scale for better quality
-          useCORS: true,
-          logging: false,
-          allowTaint: true,
-          backgroundColor: '#FFFFFF',
-          // Ensure we capture all elements
-          ignoreElements: (element) => {
-            // Ignore any irrelevant elements 
-            return element.classList.contains('ignore-export');
-          }
-        });
-
-        // Convert canvas to image data
-        const imgData = canvas.toDataURL('image/png', 1.0);
-
-        // Calculate the scaling to fit the A4 page while preserving aspect ratio
-        const pageWidth = A4_WIDTH;
-        const pageHeight = A4_HEIGHT;
-        const canvasAspectRatio = canvas.width / canvas.height;
-        const pageAspectRatio = pageWidth / pageHeight;
-        
-        let renderWidth, renderHeight;
-        
-        if (canvasAspectRatio > pageAspectRatio) {
-          // Canvas is wider compared to its height than the page
-          renderWidth = pageWidth;
-          renderHeight = pageWidth / canvasAspectRatio;
-        } else {
-          // Canvas is taller compared to its width than the page
-          renderHeight = pageHeight;
-          renderWidth = pageHeight * canvasAspectRatio;
-        }
-        
-        // Center the image on the page
-        const xOffset = (pageWidth - renderWidth) / 2;
-        const yOffset = (pageHeight - renderHeight) / 2;
-
-        // Add the page image to the PDF, maintaining aspect ratio and centered
-        pdf.addImage(imgData, 'PNG', xOffset, yOffset, renderWidth, renderHeight, undefined, 'FAST');
-      }
-
+      
+      // Get the canvas dimensions
+      const imgData = canvas.toDataURL('image/png');
+      const imgWidth = 210; // A4 width in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Add the image to the PDF
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
       // Save the PDF
-      const pdfName = 'annotated-document.pdf';
-      pdf.save(pdfName);
-
-      // Restore original zoom level
-      if (documentContainer) {
-        documentContainer.style.transform = `scale(${originalScaleFactor})`;
-        documentContainer.style.transformOrigin = 'top center';
-      }
-
-      editableTextElements.forEach((element, index) => {
-        const el = element as HTMLElement;
-        const id = `text-export-${index}`;
-
-        if (originalStyles[id]) {
-          el.style.cssText = originalStyles[id];
-        }
+      pdf.save('annotated-document.pdf');
+      
+      // Show success toast
+      toast({
+        title: 'PDF exported successfully',
+        description: 'Your PDF has been downloaded.',
       });
-
-      toast.dismiss();
-      toast.success('PDF exported successfully!');
     } catch (error) {
-      console.error('Error exporting PDF:', error);
-      toast.dismiss();
-      toast.error('Failed to export PDF. Please try again.');
-    } finally {
-      toast.dismiss();
-    }
-  };
-
-  const handleSignatureStart = (e: React.MouseEvent) => {
-    if (!signatureCanvasRef.current) return;
-
-    const canvas = signatureCanvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const point: Position = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-
-    setIsDrawingSignature(true);
-    setSignaturePath([point]);
-
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.beginPath();
-      ctx.moveTo(point.x, point.y);
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2;
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-    }
-  };
-
-  const handleSignatureMove = (e: React.MouseEvent) => {
-    if (!isDrawingSignature || !signatureCanvasRef.current) return;
-
-    const canvas = signatureCanvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const point: Position = {
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    };
-
-    setSignaturePath(prev => [...prev, point]);
-
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.lineTo(point.x, point.y);
-      ctx.stroke();
-    }
-  };
-
-  const handleSignatureEnd = () => {
-    if (!isDrawingSignature) return;
-    setIsDrawingSignature(false);
-  };
-
-  const saveSignature = () => {
-    if (signaturePath.length < 2) {
-      toast.error('Please draw a signature');
-      return;
-    }
-
-    dispatch(createSignatureAnnotation({
-      position: { x: 100, y: 100 },
-      size: { width: 300, height: 150 },
-      path: signaturePath,
-      pageNumber: currentPage
-    }));
-
-    setIsSignatureMode(false);
-    setSignaturePath([]);
-    toast.success('Signature added to document');
-  };
-
-  const clearSignature = useCallback(() => {
-    if (!signatureCanvasRef.current) return;
-
-    const canvas = signatureCanvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    }
-
-    setSignaturePath([]);
-  }, []);
-
-  const cancelSignature = () => {
-    setIsSignatureMode(false);
-    setSignaturePath([]);
-  };
-
-  const renderSignatureModal = () => {
-    if (!isSignatureMode) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 animate-fade-in">
-        <div className="panel-glass p-6 w-full max-w-lg">
-          <h3 className="text-lg font-medium mb-4 text-center">Draw Your Signature</h3>
-
-          <div className="bg-white rounded-lg border border-editor-border mb-4 overflow-hidden">
-            <canvas
-              ref={signatureCanvasRef}
-              width={500}
-              height={200}
-              className="w-full h-[200px]"
-              onMouseDown={handleSignatureStart}
-              onMouseMove={handleSignatureMove}
-              onMouseUp={handleSignatureEnd}
-              onMouseLeave={handleSignatureEnd}
-            />
-          </div>
-
-          <div className="flex gap-3 justify-center">
-            <button
-              onClick={clearSignature}
-              className="px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
-            >
-              Clear
-            </button>
-            <button
-              onClick={cancelSignature}
-              className="px-4 py-2 bg-secondary hover:bg-secondary/80 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={saveSignature}
-              className="px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-lg transition-colors"
-              disabled={signaturePath.length < 2}
-            >
-              Save Signature
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderTextAnnotationOptions = () => {
-    if (!selectedTextAnnotation || activeTool !== 'text') return null;
-
-    return (
-      <div tabIndex={0} onClick={(e) => {
-        e.stopPropagation();
-      }} className="bg-white text-gray-800 py-2 px-4 border-b border-editor-border flex items-center gap-4 shadow-sm animate-slide-up text-toolbar"
-      >
-        <div className="relative">
-          <ActionButton
-            onClick={() => setShowFontOptions(!showFontOptions)}
-            icon={<Type size={18} />}
-            tooltip="Font Family"
-          />
-
-          {showFontOptions && (
-            <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-lg border border-editor-border w-32 z-20 animate-scale-in">
-              {fontFamilyOptions.map(font => (
-                <div
-                  key={font.value}
-                  className={`px-3 py-2 cursor-pointer hover:bg-gray-100 rounded ${selectedTextAnnotation.fontFamily === font.value ? 'bg-primary/10 text-primary' : ''
-                    }`}
-                  onClick={() => handleFontFamilyChange(font.value as FontFamily)}
-                >
-                  <span className={`font-${font.value}`}>{font.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Size:</span>
-          <select
-            value={selectedTextAnnotation.fontSize || 16}
-            onChange={(e) => handleFontSizeChange(Number(e.target.value))}
-            className="border border-gray-300 rounded px-2 py-1 text-sm bg-white"
-          >
-            {fontSizeOptions.map(size => (
-              <option key={size.value} value={size.value}>
-                {size.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-gray-500">Color:</span>
-          <div className="flex gap-1">
-            {colorOptions.map(color => (
-              <div
-                key={color}
-                className={`w-5 h-5 rounded-full cursor-pointer hover:scale-110 transition-transform ${selectedTextAnnotation.color === color ? 'ring-2 ring-offset-1 ring-primary' : ''
-                  }`}
-                style={{ backgroundColor: color }}
-                onClick={() => handleTextColorChange(color)}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const getToolDescription = (tool: string) => {
-    switch (tool) {
-      case 'select':
-        return 'Edit Mode: Select and modify annotations';
-      case 'text':
-        return 'Text Mode: Add or edit text annotations';
-      case 'draw':
-        return 'Draw Mode: Create or edit drawings';
-      default:
-        return '';
+      console.error('PDF export failed:', error);
+      toast({
+        title: 'Export failed',
+        description: 'There was an error exporting the PDF. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
   return (
-    <>
-      <div className="bg-editor-panel py-2 px-4 border-b border-editor-border flex items-center gap-2 shadow-sm">
-        <div className="flex items-center gap-2 border-r border-editor-border pr-2">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-            accept=".pdf"
-            className="hidden"
-          />
-          <ActionButton
-            onClick={handleExportPDF}
-            icon={<FileDown size={18} />}
-            tooltip="Export PDF"
-          />
-        </div>
+    <div className="bg-editor-panel border-b border-editor-border flex items-center justify-between p-2">
+      <div className="flex items-center space-x-2">
+        <Button size="icon" variant="ghost" onClick={handleUndo} disabled={false}>
+          <Undo className="h-4 w-4" />
+        </Button>
+        <Button size="icon" variant="ghost" onClick={handleRedo} disabled={false}>
+          <Redo className="h-4 w-4" />
+        </Button>
 
-        <div className="flex items-center gap-2 border-r border-editor-border pr-2">
-          <ActionButton
-            onClick={() => window.zoomOutDom && window.zoomOutDom()}
-            icon={<ZoomOut size={18} />}
-            tooltip="Zoom Out"
-          />
-          <ActionButton
-            onClick={() => window.zoomInDom && window.zoomInDom()}
-            icon={<ZoomIn size={18} />}
-            tooltip="Zoom In"
-          />
-        </div>
-
-        <div className="flex items-center gap-2 border-r border-editor-border pr-2">
-          <div className="flex items-center">
-            <ActionButton
-              onClick={() => dispatch(setActiveTool('select'))}
-              icon={<TextCursor size={18} />}
-              active={activeTool === 'select'}
-              tooltip={getToolDescription('select')}
-            />
-          </div>
-          <ActionButton
-            onClick={() => {
-              dispatch(setActiveTool('text'));
-              setShowColorPicker(false);
-              setShowLineThickness(false);
-              setShowFontOptions(false);
-            }}
-            icon={<FileText size={18} />}
-            active={activeTool === 'text'}
-            tooltip={getToolDescription('text')}
-          />
-          <div className="relative">
-            <ActionButton
-              onClick={() => {
-                dispatch(setActiveTool('draw'));
-                setShowColorPicker(!showColorPicker);
-                setShowLineThickness(false);
-                setShowFontOptions(false);
-              }}
-              icon={<Pen size={18} />}
-              active={activeTool === 'draw'}
-              tooltip={getToolDescription('draw')}
-            />
-
-            {showColorPicker && (
-              <div className="absolute top-full left-0 mt-2 p-2 bg-white rounded-lg shadow-lg border border-editor-border  z-10 text-centerz-20 animate-scale-in" style={{ width: '120px' }}>
-                <div className=' grid grid-cols-3 gap-2 '>
-                  {colorOptions.map(color => (
-                    <div
-                      key={color}
-                      className={`color-option ${selectedColor === color ? 'selected' : ''}`}
-                      style={{ backgroundColor: color, borderColor: color === '#ffffff' ? '#e2e8f0' : color }}
-                      onClick={() => dispatch(setSelectedColor(color))}
-                    />
-                  ))}
-                </div>
-                <hr className='my-2' />
-                <div className='flex gap-2 items-center'>
-                  {thicknessOptions.map(option => (
-                    <div
-                      key={option.value}
-                      className={`thickness-option ${lineThickness === option.value ? 'selected' : ''}`}
-                      onClick={() => dispatch(setLineThickness(option.value as any))}
-                    >
-                      <div
-                        className="rounded-full bg-current"
-                        style={{
-                          width: option.value === 'thin' ? '4px' : option.value === 'medium' ? '8px' : '12px',
-                          height: option.value === 'thin' ? '4px' : option.value === 'medium' ? '8px' : '12px',
-                        }}
-                      />
-                    </div>
-                  ))}
-                </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              Font Size <ArrowLeftRight className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="p-2">
+            <div className="grid gap-4 py-2">
+              <div className="space-y-1">
+                <Label htmlFor="font-size">Font size (px)</Label>
+                <Input
+                  id="font-size"
+                  type="number"
+                  defaultValue={fontSize}
+                  className="w-[100px] text-right"
+                  onChange={handleFontSizeChange}
+                />
               </div>
-            )}
-          </div>
-          <div>
-            <input
-              type="file"
-              ref={imageInputRef}
-              onChange={handleImageUpload}
-              accept="image/*"
-              className="hidden"
-            />
-            <ActionButton
-              className="cursor-pointer"
-              active={activeTool === 'image'}
-              onClick={() => {
-                dispatch(setActiveTool('image'));
-                setShowColorPicker(false);
-                setShowLineThickness(false);
-                setShowFontOptions(false);
-                imageInputRef.current?.click()
-              }}
+            </div>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-              icon={<Image size={18} />}
-              tooltip="Upload Image"
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline">
+              Font Family <ArrowLeftRight className="ml-2 h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent className="p-2">
+            <DropdownMenuLabel>Select a font family</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => handleFontFamilyChange('sans')}>
+              Sans-Serif
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleFontFamilyChange('serif')}>
+              Serif
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleFontFamilyChange('mono')}>
+              Monospace
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => handleFontFamilyChange('cursive')}>
+              Cursive
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <button
+          className={`tool-button ${activeTool === 'text' ? 'active' : ''}`}
+          onClick={() => handleToolClick('text')}
+          aria-label="Add Text"
+        >
+          <TextCursor className="h-4 w-4" />
+        </button>
+
+        <button
+          className={`tool-button ${activeTool === 'draw' ? 'active' : ''}`}
+          onClick={() => handleToolClick('draw')}
+          aria-label="Draw"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+
+        <button
+          className={`tool-button ${activeTool === 'eraser' ? 'active' : ''}`}
+          onClick={() => handleToolClick('eraser')}
+          aria-label="Erase"
+        >
+          <Eraser className="h-4 w-4" />
+        </button>
+
+        <button
+          className={`tool-button ${activeTool === 'signature' ? 'active' : ''}`}
+          onClick={() => handleToolClick('signature')}
+          aria-label="Add Signature"
+        >
+          <Signature className="h-4 w-4" />
+        </button>
+
+        <input
+          type="file"
+          id="image-upload"
+          accept="image/*"
+          style={{ display: 'none' }}
+          onChange={handleFileUpload}
+        />
+        <label htmlFor="image-upload">
+          <button className="tool-button" aria-label="Add Image">
+            <ImageIcon className="h-4 w-4" />
+          </button>
+        </label>
+
+        <div className="relative">
+          <button
+            className="tool-button"
+            onClick={() => setShowColorPicker(!showColorPicker)}
+            aria-label="Pick Color"
+          >
+            <div
+              className="h-4 w-4 rounded-full"
+              style={{ backgroundColor: color, border: '1px solid #ccc' }}
             />
-          </div>
+          </button>
+          {showColorPicker && (
+            <div className="absolute z-10 mt-1">
+              <SketchPicker color={color} onChangeComplete={(c) => handleColorChange(c.hex)} />
+            </div>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <ActionButton
-            onClick={() => dispatch(undo())}
-            icon={<Undo2 size={18} />}
-            tooltip="Undo"
-            className={history.past.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
-          />
-          <ActionButton
-            onClick={() => dispatch(redo())}
-            icon={<Redo2 size={18} />}
-            tooltip="Redo"
-            className={history.future.length === 0 ? 'opacity-50 cursor-not-allowed' : ''}
-          />
-          <ActionButton
-            onClick={() => {
-              if (window.confirm('Are you sure you want to clear all annotations?')) {
-                dispatch(clearAnnotations());
-              }
-            }}
-            icon={<Trash size={18} />}
-            tooltip="Clear All Annotations"
-          />
+        <div className="relative">
+          <button
+            className="tool-button"
+            onClick={() => setShowThicknessPicker(!showThicknessPicker)}
+            aria-label="Pick Thickness"
+          >
+            <ArrowLeftRight className="h-4 w-4" />
+          </button>
+          {showThicknessPicker && (
+            <div className="absolute z-10 mt-1 panel-glass p-4">
+              <div className="flex flex-col items-center">
+                <button
+                  className={`thickness-option ${lineThickness === 'thin' ? 'selected' : ''}`}
+                  onClick={() => handleThicknessChange('thin')}
+                  aria-label="Thin Thickness"
+                >
+                  <div style={{ width: '4px', height: '4px', borderRadius: '2px', backgroundColor: color }} />
+                </button>
+                <button
+                  className={`thickness-option ${lineThickness === 'medium' ? 'selected' : ''}`}
+                  onClick={() => handleThicknessChange('medium')}
+                  aria-label="Medium Thickness"
+                >
+                  <div style={{ width: '6px', height: '6px', borderRadius: '3px', backgroundColor: color }} />
+                </button>
+                <button
+                  className={`thickness-option ${lineThickness === 'thick' ? 'selected' : ''}`}
+                  onClick={() => handleThicknessChange('thick')}
+                  aria-label="Thick Thickness"
+                >
+                  <div style={{ width: '8px', height: '8px', borderRadius: '4px', backgroundColor: color }} />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
-      {renderTextAnnotationOptions()}
-
-      {renderSignatureModal()}
-    </>
+      <div className="flex items-center space-x-2">
+        <Button variant="outline" onClick={handleExportPDF}>
+          <Download className="mr-2 h-4 w-4" />
+          Export PDF
+        </Button>
+        <Button variant="outline">
+          <Save className="mr-2 h-4 w-4" />
+          Save
+        </Button>
+      </div>
+    </div>
   );
 };
 
